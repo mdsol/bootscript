@@ -13,4 +13,20 @@ describe Bootscript do
     end
   end
 
+  describe :default_logger do
+    context "with no arguments" do
+      it "returns a Ruby Logger with LOG_LEVEL set to FATAL" do
+        logger = Bootscript.default_logger
+        logger.level.should be Logger::FATAL
+      end
+    end
+    context "with a specific log level" do
+      [Logger::DEBUG, Logger::INFO, Logger::WARN].each do |log_level|
+        it "returns a standard Ruby Logger with level #{log_level}" do
+          logger = Bootscript.default_logger(STDOUT, log_level)
+          logger.level.should be log_level
+        end
+      end
+    end
+  end
 end

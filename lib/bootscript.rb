@@ -18,5 +18,17 @@ module Bootscript
     imdisk_url:     'http://www.ltr-data.se/files/imdiskinst.exe',
   }
 
+  # Returns a slightly-modified version of the default Ruby Logger
+  # @param output [STDOUT, File, etc.] where to write the logs
+  # @param level [DEBUG|INFO|etc.] desired minimum severity
+  # @return [Logger] a standard Ruby Logger with a nicer output format
+  def self.default_logger(output = nil, level = Logger::FATAL)
+    logger = ::Logger.new(output || STDOUT)
+    logger.sev_threshold = level
+    logger.formatter = proc {|lvl, time, prog, msg|
+      "#{lvl} #{time.strftime '%Y-%m-%d %H:%M:%S %Z'}: #{msg}\n"
+    }
+    logger
+  end
 
 end
