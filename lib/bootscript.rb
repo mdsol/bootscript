@@ -18,6 +18,12 @@ module Bootscript
     imdisk_url:     'http://www.ltr-data.se/files/imdiskinst.exe',
   }
 
+  # Returns true if the passed Hash of erb_vars indicate a
+  # Windows boot target
+  def self.windows?(erb_vars)
+    (erb_vars[:platform] || '').to_s.downcase == 'windows'
+  end
+
   # Returns a slightly-modified version of the default Ruby Logger
   # @param output [STDOUT, File, etc.] where to write the logs
   # @param level [DEBUG|INFO|etc.] desired minimum severity

@@ -13,6 +13,24 @@ describe Bootscript do
     end
   end
 
+  # determines whether Windows is the boot target for a given set of ERB vars
+  describe :windows? do
+    [:windows, :WinDows, 'windows', 'WINDOWS'].each do |value|
+      context "its Hash argument has :platform => #{value} (#{value.class})" do
+        it "returns true" do
+          Bootscript.windows?(platform: value).should be true
+        end
+      end
+    end
+    [:unix, :OS_X, 'other', 'randomstring0940358'].each do |value|
+      context "its Hash argument has :platform => #{value} (#{value.class})" do
+        it "returns false" do
+          Bootscript.windows?(platform: value).should be false
+        end
+      end
+    end
+  end
+
   describe :default_logger do
     context "with no arguments" do
       it "returns a Ruby Logger with LOG_LEVEL set to FATAL" do
