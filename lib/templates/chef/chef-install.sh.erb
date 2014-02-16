@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Installs chef-client via the ombnibus installer (with minimal dependencies),
+# and tries to converge twice: first, with just this runlist -
+#     recipe[chef-client::config],recipe[chef-client::service]
+# ; and then again with the full runlist.
+set -e
+test $UID == 0 || (echo "Error: must run as root"; exit 1)
+echo "Installing Chef with ${0}..."
+
+######### STEP 0: CONFIG, rendered by bootscript gem
+NODE_NAME="<%= chef_attributes['chef_client']['config']['node_name'] %>"
+CHEF_URL="<%= chef_attributes['chef_client']['config']['chef_server_url'] %>"
+VALIDATION_PEM='<%= ramdisk_mount %>/chef/validation.pem'
+DATABAG_SECRET='<%= ramdisk_mount %>/chef/encrypted_data_bag_secret'
+CHEF_VERSION="<%= (defined? chef_version) ? chef_version : '' %>"
+OMNIBUS_INSTALLER_URL="http://opscode.com/chef/install.sh"
+CHEF_BIN="/usr/bin/chef-client" # Unix Chef omnibus always symlinks here
+PID_FILE="/var/run/chef/client.pid"
+
+######### STEP 1: MOVE CHEF SECRETS INTO PLACE
+chmod 0600 "$VALIDATION_PEM"
+if ! [ "$VALIDATION_PEM" == "/etc/chef/validation.pem" ] ; then
+  ln -sf "$VALIDATION_PEM" "/etc/chef/validation.pem"
+fi
+if [ -e "$DATABAG_SECRET" ] ; then
+  chmod 0600 "$DATABAG_SECRET"
+  if ! [ "$DATABAG_SECRET" == "/etc/chef/encrypted_data_bag_secret" ] ; then
+    ln -sf "$DATABAG_SECRET" "/etc/chef/encrypted_data_bag_secret"
+  fi
+fi
+
+######### STEP 2: CONFIGURE OPERATING SYSTEM AND INSTALL DEPENDENCIES
+echo "Performing package upgrade..."
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get upgrade -y
+echo "Installing build-essential..."
+apt-get install build-essential -y
+
+######### STEP 3: INSTALL CHEF VIA OMNIBUS INSTALLER
+echo "Downloading Chef..."
+installer=$(basename $OMNIBUS_INSTALLER_URL)
+if ! (which $CHEF_BIN >/dev/null 2>&1) ; then
+  if (which curl >/dev/null 2>&1); then
+    curl -L -o $installer $OMNIBUS_INSTALLER_URL
+  else
+    echo "Cannot find curl - cannot download Chef!"
+  fi
+fi
+cmd="bash $installer"
+if ! [ "$CHEF_VERSION" == "" ] ; then
+  cmd="$cmd -v ${CHEF_VERSION}"
+fi
+echo "Installing Chef..."
+$cmd
+rm -f $installer
+
+######### STEP 4: INITIAL, ONE-PASS CHEF CONVERGENCE
+echo "Performing initial convergence..."
+INITIAL_RUNLIST="recipe[chef-client::config],recipe[chef-client::service]"
+cmd="$CHEF_BIN --once --no-color -o $INITIAL_RUNLIST"
+echo $cmd
+$cmd
+
+######### STEP 5: MANUAL CONVERGENCE ON FULL RUNLIST
+# Signal Chef service to converge - not working
+#if [ -f $PID_FILE ] ; then
+#  PID=$(cat $PID_FILE)
+#  echo "Signalling chef service (PID $PID) to converge..."
+#  sleep 1
+#  kill -USR1 $PID
+#  kill -HUP $PID
+#fi
+echo "Manually executing full convergence..."
+cmd="$CHEF_BIN --once --no-color"
+echo $cmd
+exec $cmd

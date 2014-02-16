@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "erubis"
   spec.add_dependency "minitar"
   spec.add_dependency "rubyzip"
+  spec.add_dependency "json"
 
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"

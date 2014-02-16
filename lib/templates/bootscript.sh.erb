@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# Top-level bootscript
+set -e  # always stop on errors
+test $UID == 0 || (echo "ERROR: must run as root"; exit 1)
+
+####################################
+####  Step 0 - Configuration
+CREATE_RAMDISK='<%= create_ramdisk %>'
+RAMDISK_SIZE='<%= ramdisk_size %>'
+RAMDISK_MOUNT='<%= ramdisk_mount %>'
+LOG="/var/log/bootscript.log"
+
+
+####################################
+####  Step 1 - Logging control
+# Log all output to the log file, in addition to STDOUT
+npipe=/tmp/$$.tmp
+trap "rm -f $npipe" EXIT
+mknod $npipe p
+tee <$npipe $LOG &
+exec 1>&-
+exec 1>$npipe 2>&1
+
+
+####################################
+####  STEP 2 - Detect linux distro
+lowercase(){
+  echo "$1" |
+  sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/"
+}
+OS=`lowercase \`uname\``
+KERNEL=`uname -r`
+MACH=`uname -m`
+if [ "{$OS}" == "windowsnt" ]; then
+  OS=windows
+elif [ "{$OS}" == "darwin" ]; then
+  OS=mac
+else
+  OS=`uname`
+  if [ "${OS}" = "SunOS" ] ; then
+    OS=Solaris
+    ARCH=`uname -p`
+    OSSTR="${OS} ${REV}(${ARCH} `uname -v`)"
+  elif [ "${OS}" = "AIX" ] ; then
+    OSSTR="${OS} `oslevel` (`oslevel -r`)"
+  elif [ "${OS}" = "Linux" ] ; then
+    if [ -f /etc/redhat-release ] ; then
+      DistroBasedOn='RedHat'
+      DIST=`cat /etc/redhat-release |sed s/\ release.*//`
+      PSUEDONAME=`cat /etc/redhat-release | sed s/.*\(// | sed s/\)//`
+      REV=`cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*//`
+    elif [ -f /etc/SuSE-release ] ; then
+      DistroBasedOn='SuSe'
+      PSUEDONAME=`cat /etc/SuSE-release | tr "\n" ' '| sed s/VERSION.*//`
+      REV=`cat /etc/SuSE-release | tr "\n" ' ' | sed s/.*=\ //`
+    elif [ -f /etc/mandrake-release ] ; then
+      DistroBasedOn='Mandrake'
+      PSUEDONAME=`cat /etc/mandrake-release | sed s/.*\(// | sed s/\)//`
+      REV=`cat /etc/mandrake-release | sed s/.*release\ // | sed s/\ .*//`
+    elif [ -f /etc/debian_version ] ; then
+      DistroBasedOn='Debian'
+      DIST=`cat /etc/lsb-release | grep '^DISTRIB_ID' | awk -F=  '{ print $2 }'`
+      PSUEDONAME=`cat /etc/lsb-release | grep '^DISTRIB_CODENAME' | awk -F=  '{ print $2 }'`
+      REV=`cat /etc/lsb-release | grep '^DISTRIB_RELEASE' | awk -F=  '{ print $2 }'`
+    fi
+    if [ -f /etc/UnitedLinux-release ] ; then
+      DIST="${DIST}[`cat /etc/UnitedLinux-release | tr "\n" ' ' | sed s/VERSION.*//`]"
+    fi
+    OS=`lowercase $OS`
+    DistroBasedOn=`lowercase $DistroBasedOn`
+    readonly OS
+    readonly DIST
+    readonly DistroBasedOn
+    readonly PSUEDONAME
+    readonly REV
+    readonly KERNEL
+    readonly MACH
+  fi
+fi
+
+
+####################################
+####  STEP 3 - Create RAMdisk
+if [ "$CREATE_RAMDISK" == 'true' ] ; then
+  if $(mount | grep "$RAMDISK_MOUNT" >/dev/null 2>&1) ; then
+    echo "RAMdisk already exists at ${RAMDISK_MOUNT}..."
+  else
+    echo "Creating $RAMDISK_SIZE RAMdisk at ${RAMDISK_MOUNT}..."
+    if [ -e $RAMDISK_MOUNT ] ; then
+      echo "ERROR: $RAMDISK_MOUNT already exists and is not a RAMdisk!"
+      exit 4
+    fi
+    mkdir -p $RAMDISK_MOUNT
+    mount -t tmpfs -o size=${RAMDISK_SIZE}M tmpfs $RAMDISK_MOUNT
+  fi
+fi
+
+
+####################################
+####  STEP 4 - Check for uudecode, and attempt to install it if needed
+if ! (which uudecode >/dev/null 2>&1) ; then
+  flavor="$OS / $Dist / $DistroBasedOn"
+  echo "uudecode not found - will attempt installation for $flavor"
+  if [ "$OS" == 'linux' ] ; then
+    if [ "$DistroBasedOn" == 'debian' ] ; then
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get -y install sharutils
+    else
+      echo "ERROR: Only Debian-derived Linux supported for now :("
+      exit 3
+    fi
+  fi
+fi
+
+
+####################################
+####  STEP 5 - Extract Archive
+# Cut the trailing part of this file and pipe it to uudecode and tar
+echo "Extracting the included tar archive..."
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )/$(basename $0)"
+ARCHIVE=`awk '/^__ARCHIVE_FOLLOWS__/ {print NR + 1; exit 0; }' $SCRIPT_PATH`
+cd /
+tail -n+$ARCHIVE $SCRIPT_PATH | uudecode -o /dev/stdout | tar xovz
+echo "Removing ${SCRIPT_PATH}..."
+rm -f $SCRIPT_PATH  # this script removes itself!
+
+
+<% if defined? startup_command %>
+####################################
+####  STEP 6 - Execute startup command
+echo "Executing user startup command..."
+<% if defined? chef_validation_pem %>
+chmod 0744 /usr/local/sbin/chef-install.sh
+<% end %>
+exec <%= startup_command %>
+<% end %>
+exit 0  # This is reached only if there's no user startup command
+
+
+####################################
+####  Boot data archive - this gets extracted with `tail`, and
+####  piped through `uudecode` and `tar` in Step 5, above
+__ARCHIVE_FOLLOWS__

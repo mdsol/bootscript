@@ -1,0 +1,7 @@
+<%=
+  if defined? chef_attributes
+    JSON.pretty_generate(chef_attributes)
+  else
+    '{}'
+  end
+%>

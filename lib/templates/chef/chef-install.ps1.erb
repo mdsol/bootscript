@@ -1,0 +1,126 @@
+echo "Starting Chef installation..."
+
+$ChefVers       = "<%= (defined? chef_version) ? chef_version : '' %>"
+$ChefPath       = "C:\Chef"
+$ChefLog        = "$ChefPath\log\bootscript_log.txt"
+$CreateRAMDisk  = $<%= create_ramdisk.to_s.upcase %>
+$RAMDiskMount   = "<%= ramdisk_mount %>"
+
+function main()
+{
+  try
+  {
+    Create-Chef-Directory-Structure
+    if ($createRAMDisk) { Move-Chef-Secrets-To-Ramdisk }
+    Install-Chef-Client
+    Execute-Chef-Client
+  }
+  catch{
+    write-error $error[0]
+    exit 1
+  }
+}
+
+function Create-Chef-Directory-Structure()
+{
+  try
+  {
+    if (!(Test-Path $ChefPath)) {New-Item $ChefPath -type directory | out-null}
+    foreach($f in @("etc", "bin", "log", "tmp", "var"))
+    {
+      $subdir = "$($ChefPath)\$f"
+      if (!(Test-Path $subdir)) {New-Item $subdir -type directory | out-null}
+    }
+  }
+  catch {throw $error[0]}
+}
+
+function Move-Chef-Secrets-To-Ramdisk()
+{
+  echo "Moving Chef secrets to $RAMDiskMount"
+  Move-Item c:\chef\validation.pem $RAMDiskMount
+  Move-Item c:\chef\encrypted_data_bag_secret $RAMDiskMount
+}
+
+function Install-Chef-Client()
+{
+  echo "Downloading Chef installer..."
+  $sourceFile = "C:\chef-client.msi"
+  $wc = new-object System.Net.WebClient
+  try
+  {
+    $installerURL = Chef-URL
+    echo "Downloading $installerURL -> $sourceFile"
+    $wc.DownloadFile($installerURL, $sourceFile)
+    if ((test-path  $sourceFile) -ne $true){ throw "File not found: $sourceFile" }
+    echo "Installing Chef installer ($sourceFile) with msiexec..."
+    Execute-Command("msiexec /qn /i $sourceFile")
+  }
+  catch{
+    throw $error[0]
+  }
+}
+
+function Chef-Url()
+{
+  $major_rev = [System.Environment]::OSVersion.Version.Major
+  $minor_rev = [System.Environment]::OSVersion.Version.Minor
+  $winrev    = "$major_rev.$minor_rev"
+  $arch      = "x86_64"
+  if     ($winrev -eq "5.1") { $machineos = "2003" }
+  elseif ($winrev -eq "6.0") { $machineos = "2008" }
+  elseif ($winrev -eq "6.1") { $machineos = "2008r2" }
+  elseif ($winrev -eq "6.2") { $machineos = "2012" }
+  else   { throw "ERROR: Windows Server 2003, 2008 or 2012 required" }
+  $url = "https://www.opscode.com/chef/download?p=windows&pv=$machineos&m=$arch"
+  if ($ChefVers -ne "") { $url = "$url&v=$ChefVers" }
+  return $url
+}
+
+function Execute-Chef-Client()
+{
+  try
+  {
+    $Env:Path = "$Env:Path;C:\opscode\chef\bin;C:\opscode\chef\embedded\bin"
+
+    echo "Performing initial convergence..."
+    $tinyRunlist = "recipe[chef-client::config],recipe[chef-client::service]"
+    $logOptions = "-l info -L $ChefLog"
+    Execute-Command("chef-client --once --no-color $logOptions -o $tinyRunlist")
+
+    echo "Performing full convergence..."
+    Execute-Command("chef-client --once --no-color $logOptions")
+
+    echo "Initial Chef runs completed - see $ChefLog"
+  }
+  catch
+  {
+    echo "Chef client execution failed"
+    echo "Error was: $error[0]"
+    throw $error[0]
+  }
+}
+
+function Execute-Command($cmd)
+{
+  if ($cmd -ne "")
+  {
+    Try {
+      echo "Running: $cmd"
+      $Env:_THIS_CMD = $cmd
+      $proc = Start-Process -FilePath c:\windows\system32\cmd.exe `
+        -ArgumentList "/C", "%_THIS_CMD%" `
+        -Verbose -Debug -Wait -Passthru
+      do { start-sleep -Milliseconds 500 }
+      until ($proc.HasExited)
+      echo "Finished: $cmd"
+    }
+    Catch {
+      echo "Failed: $cmd"
+      echo "Error was: $error[0]"
+      throw $error[0]
+    }
+  }
+}
+
+main

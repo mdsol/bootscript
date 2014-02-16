@@ -1,0 +1,9 @@
+<% %w{node_name chef_server_url validation_client_name environment}.each do |param| %>
+<% if chef_attributes['chef_client']['config'][param] %>
+<%= param %> '<%= chef_attributes['chef_client']['config'][param] %>'
+<% end %>
+<% end %>
+chef_dir = "<%= platform =~ /windows/i ? '/chef' : '/etc/chef' %>"
+Dir.glob(File.join(chef_dir, "client.d", "*.rb")).each do |conf|
+  Chef::Config.from_file(conf)
+end

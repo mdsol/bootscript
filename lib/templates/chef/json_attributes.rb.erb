@@ -1,0 +1,4 @@
+attributes_file = "#{::File.dirname(__FILE__)}/../attributes.json"
+if ::File.exists? attributes_file
+  json_attribs attributes_file
+end

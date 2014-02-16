@@ -1,5 +1,8 @@
 require 'logger'
 require 'bootscript/version'
+require 'bootscript/script'
+require 'bootscript/uu_writer'
+require 'bootscript/chef'
 
 # provides the software's only public method, generate()
 module Bootscript
@@ -12,8 +15,8 @@ module Bootscript
     startup_command: '',  # customized by platform if chef used
     ramdisk_mount:  '',   # customized by platform, see platform_defaults
     ramdisk_size:   20,   # Megabytes
-    add_script_tags: true,
-    script_name:    's3_bootstrap', # base name of the S3 boot script
+    add_script_tags: false,
+    script_name:    'bootscript', # base name of the S3 boot script
     strip_comments: true,
     imdisk_url:     'http://www.ltr-data.se/files/imdiskinst.exe',
   }
@@ -36,5 +39,30 @@ module Bootscript
     }
     logger
   end
+
+  # Returns the passed Hash of template vars, merged over a set of
+  # computed, platform-specific default variables
+  def self.merge_platform_defaults(vars)
+    defaults = DEFAULT_VARS.merge(vars)
+    if defaults[:platform].to_s == 'windows'
+      defaults[:ramdisk_mount]      = 'R:'
+      defaults[:script_name]        = 'bootscript.ps1'
+      if Chef::included?(defaults)
+        defaults[:startup_command]  = 'PowerShell -Command "& '+
+          '{C:/chef/chef-install.ps1}" > c:/chef/bootscript_setup.log 2>&1'
+      end
+    else
+      defaults[:ramdisk_mount]      = '/etc/secrets'
+      defaults[:script_name]        = 'bootscript.sh'
+      if Chef::included?(defaults)
+        defaults[:startup_command]  = 'chef-install.sh'
+      end
+    end
+    defaults.merge(vars)  # return user vars merged over platform defaults
+  end
+
+  BUILTIN_TEMPLATE_DIR  = File.dirname(__FILE__)+"/templates"
+  UNIX_TEMPLATE         = "#{BUILTIN_TEMPLATE_DIR}/bootscript.sh.erb"
+  WINDOWS_TEMPLATE      = "#{BUILTIN_TEMPLATE_DIR}/bootscript.ps1.erb"
 
 end
