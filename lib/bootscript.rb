@@ -21,6 +21,17 @@ module Bootscript
     imdisk_url:     'http://www.ltr-data.se/files/imdiskinst.exe',
   }
 
+  # Generates the full text of a boot script based on the supplied
+  # template_vars and data_map. If no optional destination is supplied,
+  # the full text is returned as a String. Otherwise, the text is
+  # written to the destination using write(), and the number of bytes
+  # written is returned.
+  def self.generate(template_vars = {}, data_map = {}, destination = nil)
+    script = Bootscript::Script.new(template_vars[:logger])
+    script.data_map = data_map
+    script.generate(template_vars, destination)
+  end
+
   # Returns true if the passed Hash of erb_vars indicate a
   # Windows boot target
   def self.windows?(erb_vars)

@@ -13,9 +13,30 @@ describe Bootscript do
     end
   end
 
+  describe :generate do
+    before :each do
+      @template_vars = {key1: :value1, key2: :value2}
+      @data_map = {'/use/local/bin/hello.sh' => "echo Hello!\n"}
+      @script = Bootscript::Script.new
+    end
+    it "accepts a Hash of template vars and a data map" do
+      Bootscript.generate(@template_vars, @data_map)
+    end
+    it "creates a Script with the same data map" do
+      Bootscript::Script.stub(:new).and_return @script
+      @script.should_receive(:data_map=).with @data_map
+      Bootscript.generate(@template_vars, @data_map)
+    end
+    it "calls generate() on the script, passing the same template vars" do
+      Bootscript::Script.stub(:new).and_return @script
+      @script.should_receive(:generate).with(@template_vars, nil)
+      Bootscript.generate(@template_vars, @data_map)
+    end
+  end
+
   # determines whether Windows is the boot target for a given set of ERB vars
   describe :windows? do
-    [:windows, :WinDows, 'windows', 'WINDOWS'].each do |value|
+    [:windows, :WinDoWs, 'windows', 'WINDOWS'].each do |value|
       context "its Hash argument has :platform => #{value} (#{value.class})" do
         it "returns true" do
           Bootscript.windows?(platform: value).should be true
