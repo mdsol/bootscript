@@ -2,16 +2,17 @@ Bootscript
 ================
 Constructs a self-extracting archive, wrapped in a Bash script (or Windows batch script), for securely initializing cloud systems.
 
-  *ALPHA VERSION - needs functional testing for security*
+  *BETA VERSION - needs more functional testing and broader OS support*
 
 ----------------
 What is it?
 ----------------
 The bootscript gem enables simple creation of a self-extracting "TAR archive within a Bash script", which can be composed from any set of binary or text files -- including support for ERB templates. Any Hash of Ruby values can be interpolated into these templates when they are rendered, and the resulting "boot script" (complete with the base64-encoded archive at the end) can be invoked on nearly any Unix or Windows system to:
 
-* create a RAMdisk for holding the archive contents, which are presumably secrets (this step is optional)
+* create a RAMdisk for holding the archive contents, which are presumably secrets (this step is optional, and does not yet work on Windows)
 * extract the archived files
-* delete itself, while executing a user-specified command for further configuration
+* delete itself
+* execute a user-specified command for further configuration
 
 An extra, optional submodule is also supplied that leverages the above process to install Chef (omnibus), assign arbitrary node attributes (using the same Hash mentioned above), and kick off convergence for a given run list.
 
@@ -20,7 +21,7 @@ An extra, optional submodule is also supplied that leverages the above process t
 Why is it?
 ----------------
 * makes specification of complex, cross-platform boot data simple and portable.
-
+* simplifies initial Chef setup
 
 ----------------
 Where is it? (Installation)
@@ -33,7 +34,7 @@ Install the gem and its dependencies from RubyGems:
 ----------------
 How is it [done]? (Usage)
 ----------------
-Call gem's only public method: `Bootscript.generate()`. It accepts a Hash of template variables as its first argument, which is passed directly to any ERB  template files as they render. All the data in the Hash is available to the templates, but some of the key-value pairs also control the gem's rendering behavior, as demonstrated in these examples.
+Call the gem's main public method: `Bootscript.generate()`. It accepts a Hash of template variables as its first argument, which is passed directly to any ERB  template files as they render. All the data in the Hash is available to the templates, but some of the key-value pairs also control the gem's rendering behavior, as demonstrated in these examples.
 
 
 ### Simplest - make a RAMdisk
@@ -54,19 +55,19 @@ To include some files inside the script's archive, create a "data map", which is
     # Now define a simple shell script, to be written to the node's filesystem:
     data_map = {'/root/hello.sh' => 'echo Hello, <%= my_name %>.'}
     puts Bootscript.generate({
-        my_name:          ENV['USER'],          # evaluated now, at publish time
+        my_name:          ENV['USER'],          # evaluated now, at generation
         startup_command:  'sh /root/hello.sh',  # run on the node, after unarchiving
       }, data_map
     )
 
-_(can you guess what it will print on the node that runs the script?)_
+_(Can you guess what it will print on the node that runs the script?)_
 
 
 ### Chef support, using the included templates (single node)
 
-The software's Chef support includes some predefined template files that will install the Chef client sofware, and then kick off the convergence process. These templates are automatically included into the boot script when you pass a `:chef_validation_pem` to the `generate()` method, so no data map is required for this example (of course, you can still include one, to push extra files to the boot target).
+The software's Chef support includes some predefined template files that will install the Chef client sofware, and then kick off the convergence process. These templates are automatically included into the boot script when you pass a `:chef_validation_pem` to the `generate()` method, so no data map is required for this example.
 
-The two Chef secrets are passed directly to `publish`, so they should be read from the filesystem if necessary...
+The two Chef secrets are passed directly to `generate`, so they should be read from the filesystem if necessary...
 
     VALIDATION_CERT = File.read "#{ENV['HOME']}/.chef/myorg-validator.pem"
     DATABAG_SECRET = File.read "#{ENV['HOME']}/.chef/myorg-databag-secret.txt"
@@ -74,7 +75,7 @@ The two Chef secrets are passed directly to `publish`, so they should be read fr
     require 'uuid'                                    # Make some unique boot data
     NODE_UUID = UUID.generate                         # for just this one node...
     puts Bootscript.generate(
-      log_level:            :info,                    # Monitor progress
+      logger:               Logger.new(STDOUT),       # Monitor progress
       create_ramdisk:       true,                     # make a RAMdisk
       chef_validation_pem:  VALIDATION_CERT,          # the data, not the path!
       chef_databag_secret:  DATABAG_SECRET,           # same here - the secret data
@@ -94,7 +95,7 @@ The validation certificate and data bag secrets will be saved in a `chef` direct
 
 ### Chef support, with the node name determined by the node
 
-This is just like the previous example, only first you create a ruby file that will run on the node, to compute the node name. This can also be a template, like `/tmp/set_node_name.rb.erb`:
+This is just like the previous example, only first you create a ruby file that will run on the node at boot time, to compute the node name. This can also be a template, like `/tmp/set_node_name.rb.erb`:
 
     unless node_name
       # filled in at publish() time by the bootscript gem
@@ -118,7 +119,7 @@ Now tell the boot script to put the ruby file where chef-client will pick it up 
       '/etc/chef/client.d/set_node_name.rb' => File.new("/tmp/set_node_name.rb.erb")
     }
 
-Finally, generate *without* an explicit node name, but filling in the other values that are known at the time:
+Finally, generate *without* an explicit node name, but filling in the other values that are known at the time. Don't forget to pass the data map as the second argument to `generate()`.
 
     PROJECT, STAGE, TIER = 'myapp', 'testing', 'db'
     script = Bootscript.generate({
