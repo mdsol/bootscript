@@ -19,6 +19,7 @@ module Bootscript
     script_name:    'bootscript', # base name of the S3 boot script
     strip_comments: true,
     imdisk_url:     'http://www.ltr-data.se/files/imdiskinst.exe',
+    update_os:      false
   }
 
   # Generates the full text of a boot script based on the supplied

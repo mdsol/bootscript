@@ -5,6 +5,7 @@ test $UID == 0 || (echo "ERROR: must run as root"; exit 1)
 
 ####################################
 ####  Step 0 - Configuration
+UPDATE_OS='<%= update_os %>'
 CREATE_RAMDISK='<%= create_ramdisk %>'
 RAMDISK_SIZE='<%= ramdisk_size %>'
 RAMDISK_MOUNT='<%= ramdisk_mount %>'
@@ -78,9 +79,20 @@ else
   fi
 fi
 
+####################################
+####  STEP 3 - OS update
+if [ "$DistroBasedOn" == 'debian' ] ; then
+  export DEBIAN_FRONTEND=noninteractive
+  if [ "$UPDATE_OS" == 'true' ] ; then
+    echo "Upgrading all OS packages..."
+    apt-get update
+    cmd='apt-get -o Dpkg::Options::="--force-all" --force-yes -y upgrade'
+    $cmd || echo "==> WARNING: Unable to complete operating system package upgrade!"
+  fi
+fi
 
 ####################################
-####  STEP 3 - Create RAMdisk
+####  STEP 4 - Create RAMdisk
 if [ "$CREATE_RAMDISK" == 'true' ] ; then
   if $(mount | grep "$RAMDISK_MOUNT" >/dev/null 2>&1) ; then
     echo "RAMdisk already exists at ${RAMDISK_MOUNT}..."
@@ -97,13 +109,12 @@ fi
 
 
 ####################################
-####  STEP 4 - Check for uudecode, and attempt to install it if needed
+####  STEP 5 - Check for uudecode, and attempt to install it if needed
 if ! (which uudecode >/dev/null 2>&1) ; then
   flavor="$OS / $Dist / $DistroBasedOn"
   echo "uudecode not found - will attempt installation for $flavor"
   if [ "$OS" == 'linux' ] ; then
     if [ "$DistroBasedOn" == 'debian' ] ; then
-      export DEBIAN_FRONTEND=noninteractive
       apt-get -y install sharutils
     else
       echo "ERROR: Only Debian-derived Linux supported for now :("
@@ -114,7 +125,7 @@ fi
 
 
 ####################################
-####  STEP 5 - Extract Archive
+####  STEP 6 - Extract Archive
 # Cut the trailing part of this file and pipe it to uudecode and tar
 echo "Extracting the included tar archive..."
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )/$(basename $0)"
@@ -127,7 +138,7 @@ rm -f $SCRIPT_PATH  # this script removes itself!
 
 <% if defined? startup_command %>
 ####################################
-####  STEP 6 - Execute startup command
+####  STEP 7 - Execute startup command
 echo "Executing user startup command..."
 <% if defined? chef_validation_pem %>
 chmod 0744 /usr/local/sbin/chef-install.sh

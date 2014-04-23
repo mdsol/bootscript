@@ -72,7 +72,8 @@ describe Script do
     end
 
     # test rendering of built-in variables into built-in templates
-    vars = {create_ramdisk: false, ramdisk_size: 5, ramdisk_mount: '/secrets'}
+    vars = {create_ramdisk: false, ramdisk_size: 5,
+      ramdisk_mount: '/secrets', update_os: false}
     vars.keys.each do |var|
       it "renders template variable :#{var} as Bash variable #{var.upcase}" do
         rendered_config = Unpacker.new(Script.new.generate(vars)).config

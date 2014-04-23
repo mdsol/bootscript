@@ -30,7 +30,7 @@ if [ -e "$DATABAG_SECRET" ] ; then
 fi
 
 ######### STEP 2: CONFIGURE OPERATING SYSTEM AND INSTALL DEPENDENCIES
-echo "Performing package upgrade..."
+echo "Performing package update..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 echo "Installing build-essential and curl..."
