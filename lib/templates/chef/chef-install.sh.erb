@@ -13,6 +13,8 @@ CHEF_URL="<%= chef_attributes['chef_client']['config']['chef_server_url'] %>"
 VALIDATION_PEM='<%= ramdisk_mount %>/chef/validation.pem'
 DATABAG_SECRET='<%= ramdisk_mount %>/chef/encrypted_data_bag_secret'
 CHEF_VERSION="<%= (defined? chef_version) ? chef_version : '' %>"
+CHEF_INITIAL_RUNLIST="<%=
+  (defined? chef_initial_runlist) ? chef_initial_runlist : '' %>"
 OMNIBUS_INSTALLER_URL="http://opscode.com/chef/install.sh"
 CHEF_BIN="/usr/bin/chef-client" # Unix Chef omnibus always symlinks here
 PID_FILE="/var/run/chef/client.pid"
@@ -56,21 +58,15 @@ rm -f $installer
 
 ######### STEP 4: INITIAL, ONE-PASS CHEF CONVERGENCE
 echo "Performing initial convergence..."
-INITIAL_RUNLIST="recipe[chef-client::config],recipe[chef-client::service]"
-cmd="$CHEF_BIN --once --no-color -o $INITIAL_RUNLIST"
+cmd="$CHEF_BIN --once --no-color"
+if [[ "$CHEF_INITIAL_RUNLIST" != "" ]] ; then
+  cmd="$cmd -o $CHEF_INITIAL_RUNLIST"
+fi
 echo $cmd
 $cmd
 
-######### STEP 5: MANUAL CONVERGENCE ON FULL RUNLIST
-# Signal Chef service to converge - not working
-#if [ -f $PID_FILE ] ; then
-#  PID=$(cat $PID_FILE)
-#  echo "Signalling chef service (PID $PID) to converge..."
-#  sleep 1
-#  kill -USR1 $PID
-#  kill -HUP $PID
-#fi
-echo "Manually executing full convergence..."
-cmd="$CHEF_BIN --once --no-color"
-echo $cmd
-exec $cmd
+######### STEP 5: SIGNAL SERVICE TO CONVERGE
+echo "Signalling chef service to converge..."
+killall -USR1 chef-client || echo "  (...no chef client service detected)"
+
+echo "Done."
