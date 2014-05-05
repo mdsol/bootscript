@@ -16,7 +16,7 @@ module Bootscript
     ramdisk_mount:  '',   # customized by platform, see platform_defaults
     ramdisk_size:   20,   # Megabytes
     add_script_tags: false,
-    script_name:    'bootscript', # base name of the S3 boot script
+    script_name:    'bootscript', # base name of the boot script
     strip_comments: true,
     imdisk_url:     'http://www.ltr-data.se/files/imdiskinst.exe',
     update_os:      false

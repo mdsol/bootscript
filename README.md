@@ -34,7 +34,7 @@ Install the gem and its dependencies from RubyGems:
 ----------------
 How is it [done]? (Usage)
 ----------------
-Call the gem's main public method: `Bootscript.generate()`. It accepts a Hash of template variables as its first argument, which is passed directly to any ERB  template files as they render. All the data in the Hash is available to the templates, but some of the key-value pairs also control the gem's rendering behavior, as demonstrated in these examples.
+Call the gem's main public method: `Bootscript.generate()`. It accepts a Hash of template variables as its first argument, which is passed directly to any ERB  template files as they render. All the data in the Hash is available to the templates, but some of the key-value pairs also control the gem's rendering behavior, as demonstrated in the following examples. (There's also a [list of such variables](ERB_VARS.md).)
 
 
 ### Simplest - make a RAMdisk
@@ -50,9 +50,9 @@ Call the gem's main public method: `Bootscript.generate()`. It accepts a Hash of
 
 ### Simple - render and install a bash script, then run it
 
-To include some files inside the script's archive, create a "data map", which is a Hash that maps locations on the boot target's filesystem to the values that will be written there when the script is run. So the following example generates a script, that when executed, writes some text into the file `/root/hello.sh`.
+To include some files inside the script's archive, create a "data map", which is a Hash that maps locations on the boot target's filesystem to the values that will be written there when the script is run. The following example generates a script that, when executed, writes some text into the file `/root/hello.sh`.
 
-    # Now define a simple shell script, to be written to the node's filesystem:
+    # Define a simple shell script, to be written to the node's filesystem:
     data_map = {'/root/hello.sh' => 'echo Hello, <%= my_name %>.'}
     puts Bootscript.generate({
         my_name:          ENV['USER'],          # evaluated now, at generation
@@ -91,6 +91,7 @@ The two Chef secrets are passed directly to `generate`, so they should be read f
       }
     )
 
+
 The validation certificate and data bag secrets will be saved in a `chef` directory below the RAMdisk mount point, then symlinked into `/etc/chef`. You should use this technique for all the files you put into the `data_map` that contain secrets!
 
 ### Chef support, with the node name determined by the node
@@ -98,20 +99,19 @@ The validation certificate and data bag secrets will be saved in a `chef` direct
 This is just like the previous example, only first you create a ruby file that will run on the node at boot time, to compute the node name. This can also be a template, like `/tmp/set_node_name.rb.erb`:
 
     unless node_name
-      # filled in at publish() time by the bootscript gem
-      name = '<%= project %>-<%= stage %>-<%= tier %>'
+      # filled in at publish() time by the bootstrap gem
+      name = '<%= project %>.<%= stage %>.<%= tier %>'
       require 'ohai'
       ohai = Ohai::System.new
       ohai.all_plugins
-      if ohai.ec2 && ohai.ec2[:instance_id]
-        name = "#{name}-#{ohai.ec2[:instance_id]}"
+      if ohai[:ec2] && ohai[:ec2][:instance_id]
+        name = "#{name}.#{ohai[:ec2][:instance_id]}"
       else
-        name = "#{name}-#{rand(2**(0.size * 8 -2) -1)}"
+        name = "#{name}.#{rand(2**(0.size * 8 -2) -1)}"
       end
       puts "Setting node name to #{name}..."
       node_name name
     end
-
 
 Now tell the boot script to put the ruby file where chef-client will pick it up (thanks, Opscode!). Note that when including an ERB file into the boot archive, the value in the data map should be an existing Ruby File object, not a String:
 
@@ -174,5 +174,5 @@ The project is still in its early stages. Helping hands are appreciated.
     bundle exec autotest
 
 
-
+--------
 [Medidata]: http://mdsol.com
