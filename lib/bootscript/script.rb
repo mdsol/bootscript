@@ -169,7 +169,7 @@ module Bootscript
       lines = text.lines.to_a
       return text if lines.count < 2
       lines.first + lines[1..lines.count].
-        reject{|l| (l =~ /^#/) || (l =~ /^\s+$/)}.join('')
+        reject{|l| (l =~ /^\s*#/) || (l =~ /^\s+$/)}.join('')
     end
   end
 
