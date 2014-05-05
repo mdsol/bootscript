@@ -107,13 +107,15 @@ module Bootscript
 
     # Streams a uuencoded ZIP archive to destination, updating @bytes_written
     def write_windows_archive(destination)
-      zip_path = "/tmp/archive.zip"
-      zipfile = File.open(zip_path, 'wb')
-      Zip::OutputStream.open(zipfile) {|zip| render_data_map_into(zip)}
-      zipfile.close
-      @log.debug "zipfile = #{zip_path}, length = #{File.size zip_path}"
-      File.open(zip_path, 'rb') do |zipfile|
-        @bytes_written += destination.write([zipfile.read].pack 'm')
+      Dir.mktmpdir do |dir|
+        zip_path = "#{dir}/archive.zip"
+        zipfile = File.open(zip_path, 'wb')
+        Zip::OutputStream.open(zipfile) {|zip| render_data_map_into(zip)}
+        zipfile.close
+        @log.debug "zipfile = #{zip_path}, length = #{File.size zip_path}"
+        File.open(zip_path, 'rb') do |zipfile|
+          @bytes_written += destination.write([zipfile.read].pack 'm')
+        end
       end
     end
 
