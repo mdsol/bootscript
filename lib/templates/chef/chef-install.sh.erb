@@ -33,10 +33,14 @@ fi
 
 ######### STEP 2: CONFIGURE OPERATING SYSTEM AND INSTALL DEPENDENCIES
 echo "Performing package update..."
-export DEBIAN_FRONTEND=noninteractive
-apt-get update -y
-echo "Installing build-essential and curl..."
-apt-get --force-yes -y install build-essential curl
+if [ "$DistroBasedOn" == 'debian' ] ; then
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -y
+  echo "Installing build-essential and curl..."
+  apt-get --force-yes -y install build-essential curl
+else
+  echo "Skipping..."
+fi
 
 ######### STEP 3: INSTALL CHEF VIA OMNIBUS INSTALLER
 echo "Downloading Chef..."
