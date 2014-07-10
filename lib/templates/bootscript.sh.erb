@@ -116,8 +116,11 @@ if ! (which uudecode >/dev/null 2>&1) ; then
   if [ "$OS" == 'linux' ] ; then
     if [ "$DistroBasedOn" == 'debian' ] ; then
       apt-get -y install sharutils
+    elif [ "$DistroBasedOn" == 'redhat' ] ; then
+      yum -y update
+      yum -y install sharutils
     else
-      echo "ERROR: Only Debian-derived Linux supported for now :("
+      echo "ERROR: Only Debian-derived and Red Hat Linux supported for now :("
       exit 3
     fi
   fi
@@ -140,11 +143,16 @@ rm -f $SCRIPT_PATH  # this script removes itself!
 ####################################
 ####  STEP 7 - Execute startup command
 echo "Executing user startup command..."
-<% if defined? chef_validation_pem %>
+  <% if defined? chef_validation_pem %>
 chmod 0744 /usr/local/sbin/chef-install.sh
-<% end %>
+
+####  Red Hat seems to not find chef-install.sh even though its part of its PATH
+exec /usr/local/sbin/chef-install.sh
+  <% else %>
 exec <%= startup_command %>
+  <% end %>
 <% end %>
+
 exit 0  # This is reached only if there's no user startup command
 
 
