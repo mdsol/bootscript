@@ -86,7 +86,7 @@ if [ "$DistroBasedOn" == 'debian' ] ; then
   if [ "$UPDATE_OS" == 'true' ] ; then
     echo "Upgrading all OS packages..."
     apt-get update
-    cmd='apt-get -o Dpkg::Options::="--force-all" --force-yes -y upgrade'
+    cmd='apt-get update; apt-get dist-upgrade'
     $cmd || echo "==> WARNING: Unable to complete operating system package upgrade!"
   fi
 fi
