@@ -80,13 +80,13 @@ else
 fi
 
 ####################################
-####  STEP 3 - OS update
+####  STEP 3 - update core packages that pose a risk
 if [ "$DistroBasedOn" == 'debian' ] ; then
   export DEBIAN_FRONTEND=noninteractive
   if [ "$UPDATE_OS" == 'true' ] ; then
-    echo "Upgrading all OS packages..."
+    echo "Upgrading core OS packages..."
     apt-get update
-    cmd='apt-get --force-yes -y upgrade'
+    cmd='apt-get install -y bash'
     $cmd || echo "==> WARNING: Unable to complete operating system package upgrade!"
   fi
 fi
