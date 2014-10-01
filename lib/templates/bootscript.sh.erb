@@ -10,7 +10,7 @@ CREATE_RAMDISK='<%= create_ramdisk %>'
 RAMDISK_SIZE='<%= ramdisk_size %>'
 RAMDISK_MOUNT='<%= ramdisk_mount %>'
 LOG="/var/log/bootscript.log"
-
+PKGS='<%= inst_pkgs %>'
 
 ####################################
 ####  Step 1 - Logging control
@@ -86,8 +86,7 @@ if [ "$DistroBasedOn" == 'debian' ] ; then
   if [ "$UPDATE_OS" == 'true' ] ; then
     echo "Upgrading core OS packages..."
     apt-get update
-    cmd='apt-get install -y bash'
-    $cmd || echo "==> WARNING: Unable to complete operating system package upgrade!"
+    apt-get install -y $PKGS || echo "==> WARNING: Unable to update core system packages!"
   fi
 fi
 
