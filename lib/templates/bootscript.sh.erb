@@ -86,7 +86,9 @@ if [ "$DistroBasedOn" == 'debian' ] ; then
   if [ "$UPDATE_OS" == 'true' ] ; then
     echo "Upgrading core OS packages..."
     apt-get update
-    apt-get install -y $PKGS || echo "==> WARNING: Unable to update core system packages!"
+    if [ -n "${PKGS}" ] ; then
+       apt-get install -y $PKGS || echo "==> WARNING: Unable to update core system packages!"
+    fi 
   fi
 fi
 
