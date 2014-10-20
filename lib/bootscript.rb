@@ -19,7 +19,7 @@ module Bootscript
     script_name:    'bootscript', # base name of the boot script
     strip_comments: true,
     imdisk_url:     'http://www.ltr-data.se/files/imdiskinst.exe',
-    update_os:      false
+    update_os:      false,
     inst_pkgs:     'bash openssl openssh-server' #list of packages you want upgraded
   }
 
