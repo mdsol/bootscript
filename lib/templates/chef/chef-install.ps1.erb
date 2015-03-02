@@ -82,6 +82,7 @@ function Execute-Chef-Client()
   try
   {
     $Env:Path = "$Env:Path;C:\opscode\chef\bin;C:\opscode\chef\embedded\bin"
+    $Env:SSL_CERT_FILE = "C:\opscode\chef\embedded\ssl\certs\cacert.pem"
 
     echo "Performing initial convergence..."
     $tinyRunlist = "recipe[chef-client::config],recipe[chef-client::service]"

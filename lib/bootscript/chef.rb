@@ -52,6 +52,8 @@ module Bootscript
           File.new("#{template_dir}/attributes.json.erb"),
         'chef/client.d/include_json_attributes.rb' =>
           File.new("#{template_dir}/json_attributes.rb.erb"),
+        'chef/client.d/set_ssl_cert_file.rb' =>
+          File.new("#{template_dir}/set_ssl_cert_file.rb.erb"),
         # files generated from required ERB vars
         "chef/validation.pem" =>
           erb_vars[:chef_validation_pem] || '',
