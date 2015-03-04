@@ -1,1 +1,5 @@
+<% if platform =~ /windows/i %>
 ENV['SSL_CERT_FILE'] = 'C:\opscode\chef\embedded\ssl\certs\cacert.pem'
+<% end %>
+
+ssl_verify_mode :verify_peer
