@@ -11,7 +11,7 @@ echo "Installing Chef with ${0}..."
 NODE_NAME="<%= chef_attributes['chef_client']['config']['node_name'] %>"
 CHEF_URL="<%= chef_attributes['chef_client']['config']['chef_server_url'] %>"
 VALIDATION_PEM='<%= ramdisk_mount %>/chef/validation.pem'
-OHAI_HINTS_DIR='<%= ramdisk_mount %>/chef/ohai/hints'
+OHAI_HINTS_DIR='/etc/chef/ohai/hints'
 DATABAG_SECRET='<%= ramdisk_mount %>/chef/encrypted_data_bag_secret'
 CHEF_VERSION="<%= (defined? chef_version) ? chef_version : '' %>"
 CHEF_INITIAL_RUNLIST="<%=
