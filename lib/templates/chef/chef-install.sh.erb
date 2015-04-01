@@ -15,7 +15,9 @@ OHAI_HINTS_DIR='/etc/chef/ohai/hints'
 DATABAG_SECRET='<%= ramdisk_mount %>/chef/encrypted_data_bag_secret'
 CHEF_VERSION="<%= (defined? chef_version) ? chef_version : '' %>"
 CHEF_INITIAL_RUNLIST="<%=
-  (defined? chef_initial_runlist) ? chef_initial_runlist : '' %>"
+(defined? chef_initial_runlist) ? chef_initial_runlist : '' %>"
+CHEF_INITIAL_ATTRIBUTES_FILE="<%=
+(defined? chef_initial_attributes_file) ? chef_initial_attributes_file : '' %>"
 OMNIBUS_INSTALLER_URL="http://opscode.com/chef/install.sh"
 CHEF_BIN="/usr/bin/chef-client" # Unix Chef omnibus always symlinks here
 PID_FILE="/var/run/chef/client.pid"
@@ -74,6 +76,10 @@ echo "Performing initial convergence..."
 cmd="$CHEF_BIN --once --no-color"
 if [[ "$CHEF_INITIAL_RUNLIST" != "" ]] ; then
   cmd="$cmd -o $CHEF_INITIAL_RUNLIST"
+fi
+
+if [[ "$CHEF_INITIAL_ATTRIBUTES_FILE" != "" ]] ; then
+  cmd="$cmd -j $CHEF_INITIAL_ATTRIBUTES_FILE"
 fi
 echo $cmd
 $cmd
