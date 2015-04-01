@@ -2,6 +2,7 @@ echo "Starting Chef installation..."
 
 $ChefVers       = "<%= (defined? chef_version) ? chef_version : '' %>"
 $ChefPath       = "C:\Chef"
+$OhaiHintsDir   = "$ChefPath\ohai\hints"
 $ChefLog        = "$ChefPath\log\bootscript_log.txt"
 $CreateRAMDisk  = $<%= create_ramdisk.to_s.upcase %>
 $RAMDiskMount   = "<%= ramdisk_mount %>"
@@ -11,6 +12,7 @@ function main()
   try
   {
     Create-Chef-Directory-Structure
+    Create-Ohai-Hints
     if ($createRAMDisk) { Move-Chef-Secrets-To-Ramdisk }
     Install-Chef-Client
     Execute-Chef-Client
@@ -21,15 +23,32 @@ function main()
   }
 }
 
+function Create-EC2-Hint()
+{
+  try {
+    $wc = New-Object System.Net.WebClient
+    $wc.DownloadString("http://169.254.169.254") | Out-Null
+    New-Item -Type file -Force -Path (Join-Path $OhaiHintsDir "ec2.json") | Out-Null
+  } catch {
+    # We are not an EC2 instance.
+  }
+}
+
+function Create-Ohai-Hints()
+{
+  try
+  {
+    Create-EC2-Hint
+  }
+  catch {throw $error[0]}
+}
+
 function Create-Chef-Directory-Structure()
 {
   try
   {
-    if (!(Test-Path $ChefPath)) {New-Item $ChefPath -type directory | out-null}
-    foreach($f in @("etc", "bin", "log", "tmp", "var"))
-    {
-      $subdir = "$($ChefPath)\$f"
-      if (!(Test-Path $subdir)) {New-Item $subdir -type directory | out-null}
+    @("etc", "bin", "log", "tmp", "var") | foreach {
+      New-Item -force -type directory -Path (Join-Path $ChefPath $_) | out-null
     }
   }
   catch {throw $error[0]}
