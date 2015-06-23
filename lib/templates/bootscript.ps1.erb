@@ -1,91 +1,110 @@
-$startup_cmd    = '<%= startup_command %>'
-$createRAMDisk  = $<%= create_ramdisk.to_s.upcase %>
-$RAMDiskSize    = "<%= ramdisk_size %>M"
-$RAMDiskMount   = "<%= ramdisk_mount %>"
-$IMDiskURL      = "<%= imdisk_url %>"
-$IMDisk         = "C:\windows\system32\imdisk.exe"
-$IMDIskInstaller = "C:\imdiskinst.exe"
-
-function main()
+<% if add_script_tags; %><powershell><% end %>
+if ((Get-ExecutionPolicy) -ne "Unrestricted")
 {
-  echo "Starting bootstrap..."
-  Decrypt-Archive
-  if ($createRAMDisk)
+  Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Force -Scope Process
+}
+
+$ErrorActionPreference="SilentlyContinue" 
+Stop-Transcript | Out-Null
+$ErrorActionPreference = "Continue"
+
+Start-Transcript -Path "c:\bootscript.log" -Append
+
+{
+  $startup_cmd     = '<%= startup_command %>'
+  $createRAMDisk   = $<%= create_ramdisk.to_s.upcase %>
+  $RAMDiskSize     = "<%= ramdisk_size %>M"
+  $RAMDiskMount    = "<%= ramdisk_mount %>"
+  $IMDiskURL       = "<%= imdisk_url %>"
+  $IMDisk          = "C:\windows\system32\imdisk.exe"
+  $IMDIskInstaller = "C:\imdiskinst.exe"
+
+  function main()
   {
-    Download-ImDisk
-    Install-ImDisk
-    Execute-ImDisk
-    echo "RAMDisk setup complete."
-  }
-  Execute-Command($startup_cmd)
-  echo "Bootstrap complete."
-}
-
-function Download-ImDisk()
-{
-  if ((test-path  $IMDIskInstaller) -ne $true)
-  {
-    echo "Downloading ImDisk utility..."
-    $wc = new-object System.Net.WebClient
-    try   { $wc.DownloadFile($IMDiskURL, $IMDIskInstaller) }
-    catch { throw $error[0] }
-  }
-}
-
-function Install-ImDisk()
-{
-  if ((test-path  $IMDisk) -ne $true)
-  {
-    $Env:IMDISK_SILENT_SETUP = 1
-    Execute-Command("$IMDIskInstaller -y")
-  }
-}
-
-function Execute-ImDisk()
-{
-  if ((test-path  $RAMDiskMount) -ne $true)
-  {
-    echo "Setting up $RAMDiskSize RAMDisk at $RAMDiskMount..."
-    $fsArgs = '"/fs:ntfs /q /y"'
-    Execute-Command("$IMDisk -a -t vm -m $RAMDiskMount -s $RAMDiskSize -p $fsArgs")
-  }
-}
-
-function Decrypt-Archive()
-{
-  $archive_path = "C:\bootscript_archive.zip"
-  [io.file]::WriteAllBytes($archive_path,
-    [System.Convert]::FromBase64String($archive))
-  Expand-ZIPFile $archive_path "C:\"
-  Remove-Item $archive_path
-}
-
-function Expand-ZIPFile($file, $dest)
-{
-  $shell = new-object -com shell.application
-  $zip = $shell.NameSpace($file)
-  foreach($item in $zip.items())
-    { $shell.Namespace($dest).copyhere($item) }
-}
-
-function Execute-Command($cmd)
-{
-  if ($cmd -ne "")
-  {
-    Try {
-      echo "Running: $cmd"
-      $Env:_THIS_CMD = $cmd
-      $proc = Start-Process -FilePath c:\windows\system32\cmd.exe `
-        -ArgumentList "/C", "%_THIS_CMD%" `
-        -Verbose -Debug -Wait -Passthru
-      do { start-sleep -Milliseconds 500 }
-      until ($proc.HasExited)
-      echo "Finished: $cmd"
+    echo "Starting bootstrap..."
+    Decrypt-Archive
+    if ($createRAMDisk)
+    {
+      Download-ImDisk
+      Install-ImDisk
+      Execute-ImDisk
+      echo "RAMDisk setup complete."
     }
-    Catch {
-      echo "Failed: $cmd"
-      echo "Error was: $error[0]"
-      throw $error[0]
+    Execute-Command($startup_cmd)
+    echo "Bootstrap complete."
+  }
+
+  function Download-ImDisk()
+  {
+    if ((test-path  $IMDIskInstaller) -ne $true)
+    {
+      echo "Downloading ImDisk utility..."
+      $wc = new-object System.Net.WebClient
+      try   { $wc.DownloadFile($IMDiskURL, $IMDIskInstaller) }
+      catch { throw $error[0] }
     }
   }
-}
+
+  function Install-ImDisk()
+  {
+    if ((test-path  $IMDisk) -ne $true)
+    {
+      $Env:IMDISK_SILENT_SETUP = 1
+      Execute-Command("$IMDIskInstaller -y")
+    }
+  }
+
+  function Execute-ImDisk()
+  {
+    if ((test-path  $RAMDiskMount) -ne $true)
+    {
+      echo "Setting up $RAMDiskSize RAMDisk at $RAMDiskMount..."
+      $fsArgs = '"/fs:ntfs /q /y"'
+      Execute-Command("$IMDisk -a -t vm -m $RAMDiskMount -s $RAMDiskSize -p $fsArgs")
+    }
+  }
+
+  function Decrypt-Archive()
+  {
+    $archive_path = "C:\bootscript_archive.zip"
+    [io.file]::WriteAllBytes($archive_path,
+      [System.Convert]::FromBase64String($archive))
+    Expand-ZIPFile $archive_path "C:\"
+    Remove-Item $archive_path
+  }
+
+  function Expand-ZIPFile($file, $dest)
+  {
+    $shell = new-object -com shell.application
+    $zip = $shell.NameSpace($file)
+    foreach($item in $zip.items())
+      { $shell.Namespace($dest).copyhere($item) }
+  }
+
+  function Execute-Command($cmd)
+  {
+    if ($cmd -ne "")
+    {
+      Try {
+        echo "Running: $cmd"
+        $Env:_THIS_CMD = $cmd
+        $proc = Start-Process -FilePath c:\windows\system32\cmd.exe `
+          -ArgumentList "/C", "%_THIS_CMD%" `
+          -Verbose -Debug -Wait -Passthru
+        do { start-sleep -Milliseconds 500 }
+        until ($proc.HasExited)
+        echo "Finished: $cmd"
+      }
+      Catch {
+        echo "Failed: $cmd"
+        echo "Error was: $error[0]"
+        throw $error[0]
+      }
+    }
+  }
+
+  main
+}.Invoke($args)
+
+Stop-Transcript
+<% if add_script_tags; %></powershell><% end %>
