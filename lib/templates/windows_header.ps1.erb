@@ -1,0 +1,13 @@
+<% if add_script_tags; %><powershell><% end %>
+if ((Get-ExecutionPolicy) -ne "Unrestricted")
+{
+  Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Force -Scope Process
+}
+
+$ErrorActionPreference="SilentlyContinue" 
+Stop-Transcript | Out-Null
+$ErrorActionPreference = "Continue"
+
+Start-Transcript -Path "c:\bootscript.log" -Append
+
+{
