@@ -68,7 +68,7 @@ module Bootscript
       defaults[:ramdisk_mount]      = '/etc/secrets'
       defaults[:script_name]        = 'bootscript.sh'
       if Chef::included?(defaults)
-        defaults[:startup_command]  = 'chef-install.sh'
+        defaults[:startup_command]  = '/usr/local/sbin/chef-install.sh'
       end
     end
     defaults.merge(vars)  # return user vars merged over platform defaults
