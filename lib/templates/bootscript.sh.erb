@@ -88,7 +88,7 @@ if [ "$DistroBasedOn" == 'debian' ] ; then
     apt-get update
     if [ -n "${PKGS}" ] ; then
        apt-get install -y $PKGS || echo "==> WARNING: Unable to update core system packages!"
-    fi 
+    fi
   fi
 fi
 
@@ -142,18 +142,13 @@ rm -f $SCRIPT_PATH  # this script removes itself!
 
 <% if defined? startup_command %>
 ####################################
-####  STEP 7 - Execute startup command
+####  STEP 6 - Execute startup command
 echo "Executing user startup command..."
-  <% if defined? chef_validation_pem %>
+<% if defined? chef_validation_pem %>
 chmod 0744 /usr/local/sbin/chef-install.sh
-
-####  Red Hat seems to not find chef-install.sh even though its part of its PATH
-exec /usr/local/sbin/chef-install.sh
-  <% else %>
-exec <%= startup_command %>
-  <% end %>
 <% end %>
-
+exec <%= startup_command %>
+<% end %>
 exit 0  # This is reached only if there's no user startup command
 
 
