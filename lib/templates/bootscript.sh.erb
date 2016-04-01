@@ -119,6 +119,8 @@ if ! (which uudecode >/dev/null 2>&1) ; then
       apt-get -y install sharutils
     elif [ "$DistroBasedOn" == 'redhat' ] ; then
       yum -y update
+      # As of RH6, the sharutils package is in the "optional" repo
+      yum-config-manager --enable rhui-REGION-rhel-server-releases-optional
       yum -y install sharutils
     else
       echo "ERROR: Only Debian-derived and Red Hat Linux supported for now :("
