@@ -16,7 +16,7 @@ DATABAG_SECRET='<%= ramdisk_mount %>/chef/encrypted_data_bag_secret'
 CHEF_VERSION="<%= (defined? chef_version) ? chef_version : '' %>"
 CHEF_INITIAL_RUNLIST="<%=
   (defined? chef_initial_runlist) ? chef_initial_runlist : '' %>"
-OMNIBUS_INSTALLER_URL="http://opscode.com/chef/install.sh"
+OMNIBUS_INSTALLER_URL="https://omnitruck.chef.io/install.sh"
 CHEF_BIN="/usr/bin/chef-client" # Unix Chef omnibus always symlinks here
 PID_FILE="/var/run/chef/client.pid"
 
