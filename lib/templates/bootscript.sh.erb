@@ -112,7 +112,7 @@ fi
 ####################################
 ####  STEP 5 - Check for uudecode, and attempt to install it if needed
 if ! (which uudecode >/dev/null 2>&1) ; then
-  flavor="$OS / $Dist / $DistroBasedOn"
+  flavor="$OS / $DIST / $DistroBasedOn"
   echo "uudecode not found - will attempt installation for $flavor"
   if [ "$OS" == 'linux' ] ; then
     if [ "$DistroBasedOn" == 'debian' ] ; then
@@ -121,6 +121,8 @@ if ! (which uudecode >/dev/null 2>&1) ; then
       yum -y update
       # As of RH6, the sharutils package is in the "optional" repo
       yum-config-manager --enable rhui-REGION-rhel-server-releases-optional
+      # As of RH7, the sharutils package is in the "optional" repo
+      yum-config-manager --enable rhui-REGION-rhel-server-optional
       yum -y install sharutils
     else
       echo "ERROR: Only Debian-derived and Red Hat Linux supported for now :("
