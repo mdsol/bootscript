@@ -151,9 +151,30 @@ echo "Executing user startup command..."
 <% if defined? chef_validation_pem %>
 chmod 0744 /usr/local/sbin/chef-install.sh
 <% end %>
-exec <%= startup_command %>
+if ! <%= startup_command %> ; then
+    echo "Startup command failed. This system may be unhealthy."
+
+    # The startup command failed so this instance is likely to be
+    # broken in some way. We should mark the instance as unhealthy
+    # if it's part of an AWS autoscaling group. This relies on the
+    # AWS CLI tools being installed.
+    if ec2_instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id) ; then
+        ec2_region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -e s'/.$//')
+        which aws >/dev/null && \
+            aws autoscaling describe-auto-scaling-instances \
+                --instance-ids $ec2_instance_id \
+                --region $ec2_region \
+                | grep -F $ec2_instance_id >/dev/null &&
+            aws autoscaling set-instance-health \
+                --instance-id $ec2_instance_id \
+                --health-status Unhealthy \
+                --no-should-respect-grace-period \
+                --region $ec2_region
+    fi
+    exit 1
+fi
 <% end %>
-exit 0  # This is reached only if there's no user startup command
+exit 0
 
 
 ####################################
