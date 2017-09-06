@@ -1,0 +1,40 @@
+#!/usr/bin/env bash <%= bash_options %>
+# Calls out to Ansible Tower to request bootstrapping actions.
+set -e
+test $UID == 0 || (echo "Error: must run as root"; exit 1)
+echo "Calling Ansible Tower with ${0}..."
+
+######### STEP 0: CONFIG, rendered by bootscript gem
+TOWER_URL="<%= tower_url %>"
+
+######### STEP 1: CONFIGURE OPERATING SYSTEM AND INSTALL DEPENDENCIES
+echo "Performing package update..."
+if [ "$DistroBasedOn" == 'debian' ] ; then
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -y
+  echo "Installing build-essential and curl..."
+  apt-get --force-yes -y install build-essential curl
+else
+  echo "Skipping..."
+fi
+
+######### STEP 2: SIGNAL TO TOWER
+echo "Signalling Tower to bootstrap us..."
+if which curl > /dev/null; then
+  AWS_METADATA_URL="http://169.254.169.254/latest/meta-data"
+  cat <<END_POST_DATA | curl <%= curl_options %> -H "Content-Type: application/json" -X POST --data - $TOWER_URL
+    {
+      "host_config_key": "<%= tower_host_config_key %>",
+      "extra_vars": {
+        "local_hostname": "$(curl ${AWS_METADATA_URL}/local-hostname)",
+        "local_ipv4": "$(curl ${AWS_METADATA_URL}/local-ipv4)",
+        "public_hostname": "$(curl ${AWS_METADATA_URL}/public-hostname)",
+        "public_ipv4": "$(curl ${AWS_METADATA_URL}/public-ipv4)"
+      }
+    }
+END_POST_DATA
+else
+  echo "The curl command is not available; unable to signal Tower for bootstrap"
+fi
+
+echo "Done."

@@ -3,6 +3,7 @@ require 'bootscript/version'
 require 'bootscript/script'
 require 'bootscript/uu_writer'
 require 'bootscript/chef'
+require 'bootscript/ansible'
 
 # provides the software's only public method, generate()
 module Bootscript
@@ -10,17 +11,19 @@ module Bootscript
   # These values are interpolated into all templates, and can be overridden
   # in calls to {Bootscript#generate}
   DEFAULT_VARS = {
-    platform:       :unix,          # or :windows
-    create_ramdisk: false,
+    platform:        :unix,         # or :windows
+    create_ramdisk:  false,
     startup_command: '',  # customized by platform if chef used
-    ramdisk_mount:  '',   # customized by platform, see platform_defaults
-    ramdisk_size:   20,   # Megabytes
+    ramdisk_mount:   '',  # customized by platform, see platform_defaults
+    ramdisk_size:    20,  # Megabytes
     add_script_tags: false,
-    script_name:    'bootscript', # base name of the boot script
-    strip_comments: true,
-    imdisk_url:     'http://www.ltr-data.se/files/imdiskinst.exe',
-    update_os:      false,
-    inst_pkgs:     'bash openssl openssh-server' #list of packages you want upgraded
+    script_name:     'bootscript',  # base name of the boot script
+    strip_comments:  true,
+    imdisk_url:      'http://www.ltr-data.se/files/imdiskinst.exe',
+    update_os:       false,
+    inst_pkgs:       'bash openssl openssh-server', #list of packages you want upgraded
+    curl_options:    '',
+    bash_options:    ''
   }
 
   # Generates the full text of a boot script based on the supplied
@@ -69,6 +72,9 @@ module Bootscript
       defaults[:script_name]        = 'bootscript.sh'
       if Chef::included?(defaults)
         defaults[:startup_command]  = 'chef-install.sh'
+      end
+      if Ansible::included?(defaults)
+        defaults[:startup_command]  = 'ansible-install.sh'
       end
     end
     defaults.merge(vars)  # return user vars merged over platform defaults
