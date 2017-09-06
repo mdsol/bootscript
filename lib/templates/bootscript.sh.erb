@@ -88,7 +88,7 @@ if [ "$DistroBasedOn" == 'debian' ] ; then
     apt-get update
     if [ -n "${PKGS}" ] ; then
        apt-get install -y $PKGS || echo "==> WARNING: Unable to update core system packages!"
-    fi 
+    fi
   fi
 fi
 
@@ -112,13 +112,17 @@ fi
 ####################################
 ####  STEP 5 - Check for uudecode, and attempt to install it if needed
 if ! (which uudecode >/dev/null 2>&1) ; then
-  flavor="$OS / $Dist / $DistroBasedOn"
+  flavor="$OS / $DIST / $DistroBasedOn"
   echo "uudecode not found - will attempt installation for $flavor"
   if [ "$OS" == 'linux' ] ; then
     if [ "$DistroBasedOn" == 'debian' ] ; then
       apt-get -y install sharutils
     elif [ "$DistroBasedOn" == 'redhat' ] ; then
       yum -y update
+      # As of RH6, the sharutils package is in the "optional" repo
+      yum-config-manager --enable rhui-REGION-rhel-server-releases-optional
+      # As of RH7, the sharutils package is in the "optional" repo
+      yum-config-manager --enable rhui-REGION-rhel-server-optional
       yum -y install sharutils
     else
       echo "ERROR: Only Debian-derived and Red Hat Linux supported for now :("
@@ -142,19 +146,45 @@ rm -f $SCRIPT_PATH  # this script removes itself!
 
 <% if defined? startup_command %>
 ####################################
-####  STEP 7 - Execute startup command
+####  STEP 6 - Execute startup command
 echo "Executing user startup command..."
-  <% if defined? chef_validation_pem %>
+<% if defined? chef_validation_pem %>
 chmod 0744 /usr/local/sbin/chef-install.sh
-
-####  Red Hat seems to not find chef-install.sh even though its part of its PATH
-exec /usr/local/sbin/chef-install.sh
-  <% else %>
-exec <%= startup_command %>
-  <% end %>
 <% end %>
+if ! <%= startup_command %> ; then
+    echo "Startup command failed. This system may be unhealthy."
 
-exit 0  # This is reached only if there's no user startup command
+    # The startup command failed so this instance is likely to be
+    # broken in some way. We should mark the instance as unhealthy
+    # if it's part of an AWS autoscaling group. This relies on the
+    # AWS CLI tools being installed.
+
+    aws_cli_version=$(aws --version 2>&1 | awk '{print $1}' | awk -F/ '{print $2}')
+    aws_major=$(echo $aws_cli_version | awk -F. '{print $1}' | sed -e 's/[^0-9]//g')
+    aws_minor=$(echo $aws_cli_version | awk -F. '{print $2}' | sed -e 's/[^0-9]//g')
+    if [ "$aws_major" -le "1" -a "$aws_minor" -lt "11" ]; then
+        echo "The aws-cli package version is out of date; please upgrade your AMI."
+    else
+        if ec2_instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id) ; then
+            ec2_region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -e s'/.$//')
+            which aws >/dev/null && \
+                aws autoscaling describe-auto-scaling-instances \
+                    --instance-ids $ec2_instance_id \
+                    --region $ec2_region \
+                    | grep -F $ec2_instance_id >/dev/null &&
+                aws autoscaling set-instance-health \
+                    --instance-id $ec2_instance_id \
+                    --health-status Unhealthy \
+                    --no-should-respect-grace-period \
+                    --region $ec2_region
+        fi
+
+    fi
+
+    exit 1
+fi
+<% end %>
+exit 0
 
 
 ####################################

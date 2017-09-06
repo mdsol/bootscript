@@ -2,6 +2,7 @@ echo "Starting Chef installation..."
 
 $ChefVers       = "<%= (defined? chef_version) ? chef_version : '' %>"
 $ChefPath       = "C:\Chef"
+$OhaiHintsDir   = "$ChefPath\ohai\hints"
 $ChefLog        = "$ChefPath\log\bootscript_log.txt"
 $CreateRAMDisk  = $<%= create_ramdisk.to_s.upcase %>
 $RAMDiskMount   = "<%= ramdisk_mount %>"
@@ -11,6 +12,7 @@ function main()
   try
   {
     Create-Chef-Directory-Structure
+    Create-Ohai-Hints
     if ($createRAMDisk) { Move-Chef-Secrets-To-Ramdisk }
     Install-Chef-Client
     Execute-Chef-Client
@@ -21,15 +23,32 @@ function main()
   }
 }
 
+function Create-EC2-Hint()
+{
+  try {
+    $wc = New-Object System.Net.WebClient
+    $wc.DownloadString("http://169.254.169.254") | Out-Null
+    New-Item -Type file -Force -Path (Join-Path $OhaiHintsDir "ec2.json") | Out-Null
+  } catch {
+    # We are not an EC2 instance.
+  }
+}
+
+function Create-Ohai-Hints()
+{
+  try
+  {
+    Create-EC2-Hint
+  }
+  catch {throw $error[0]}
+}
+
 function Create-Chef-Directory-Structure()
 {
   try
   {
-    if (!(Test-Path $ChefPath)) {New-Item $ChefPath -type directory | out-null}
-    foreach($f in @("etc", "bin", "log", "tmp", "var"))
-    {
-      $subdir = "$($ChefPath)\$f"
-      if (!(Test-Path $subdir)) {New-Item $subdir -type directory | out-null}
+    @("etc", "bin", "log", "tmp", "var") | foreach {
+      New-Item -force -type directory -Path (Join-Path $ChefPath $_) | out-null
     }
   }
   catch {throw $error[0]}
@@ -38,14 +57,14 @@ function Create-Chef-Directory-Structure()
 function Move-Chef-Secrets-To-Ramdisk()
 {
   echo "Moving Chef secrets to $RAMDiskMount"
-  Move-Item c:\chef\validation.pem $RAMDiskMount
-  Move-Item c:\chef\encrypted_data_bag_secret $RAMDiskMount
+  Move-Item (Join-Path $ChefPath "validation.pem") $RAMDiskMount
+  Move-Item (Join-Path $ChefPath "encrypted_data_bag_secret") $RAMDiskMount
 }
 
 function Install-Chef-Client()
 {
   echo "Downloading Chef installer..."
-  $sourceFile = "C:\chef-client.msi"
+  $sourceFile = (Join-Path $ChefPath "chef-client.msi")
   $wc = new-object System.Net.WebClient
   try
   {
@@ -71,6 +90,7 @@ function Chef-Url()
   elseif ($winrev -eq "6.0") { $machineos = "2008" }
   elseif ($winrev -eq "6.1") { $machineos = "2008r2" }
   elseif ($winrev -eq "6.2") { $machineos = "2012" }
+  elseif ($winrev -eq "6.3") { $machineos = "2012r2" }
   else   { throw "ERROR: Windows Server 2003, 2008 or 2012 required" }
   $url = "https://www.opscode.com/chef/download?p=windows&pv=$machineos&m=$arch"
   if ($ChefVers -ne "") { $url = "$url&v=$ChefVers" }
@@ -82,6 +102,7 @@ function Execute-Chef-Client()
   try
   {
     $Env:Path = "$Env:Path;C:\opscode\chef\bin;C:\opscode\chef\embedded\bin"
+    $Env:SSL_CERT_FILE = "C:\opscode\chef\embedded\ssl\certs\cacert.pem"
 
     echo "Performing initial convergence..."
     $tinyRunlist = "recipe[chef-client::config],recipe[chef-client::service]"

@@ -1,10 +1,10 @@
-$startup_cmd    = '<%= startup_command %>'
-$createRAMDisk  = $<%= create_ramdisk.to_s.upcase %>
-$RAMDiskSize    = "<%= ramdisk_size %>M"
-$RAMDiskMount   = "<%= ramdisk_mount %>"
-$IMDiskURL      = "<%= imdisk_url %>"
-$IMDisk         = "C:\windows\system32\imdisk.exe"
-$IMDIskInstaller = "C:\imdiskinst.exe"
+$startup_cmd     = '<%= startup_command %>'
+$createRAMDisk   = $<%= create_ramdisk.to_s.upcase %>
+$RAMDiskSize     = "<%= ramdisk_size %>M"
+$RAMDiskMount    = "<%= ramdisk_mount %>"
+$IMDiskURL       = "<%= imdisk_url %>"
+$IMDisk          = "C:\windows\system32\imdisk.exe"
+$IMDiskInstaller = "C:\imdiskinst.exe"
 
 function main()
 {
@@ -23,11 +23,11 @@ function main()
 
 function Download-ImDisk()
 {
-  if ((test-path  $IMDIskInstaller) -ne $true)
+  if ((test-path  $IMDiskInstaller) -ne $true)
   {
     echo "Downloading ImDisk utility..."
     $wc = new-object System.Net.WebClient
-    try   { $wc.DownloadFile($IMDiskURL, $IMDIskInstaller) }
+    try   { $wc.DownloadFile($IMDiskURL, $IMDiskInstaller) }
     catch { throw $error[0] }
   }
 }
@@ -37,7 +37,7 @@ function Install-ImDisk()
   if ((test-path  $IMDisk) -ne $true)
   {
     $Env:IMDISK_SILENT_SETUP = 1
-    Execute-Command("$IMDIskInstaller -y")
+    Execute-Command("$IMDiskInstaller -y")
   }
 }
 

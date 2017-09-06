@@ -39,19 +39,19 @@ module Bootscript
     # @return [String] the text of the rendered script, if destination is nil
     def generate(erb_vars = {}, destination = nil)
       # Set state / instance variables, used by publish() and helper methods
-      @vars           = Bootscript.merge_platform_defaults(erb_vars)
-      output          = destination || StringIO.open(@script_data = "")
-      @bytes_written  = 0
+      @vars          = Bootscript.merge_platform_defaults(erb_vars)
+      output         = destination || StringIO.open(@script_data = "")
+      @bytes_written = 0
       if Bootscript.windows?(@vars)
         @bytes_written += output.write(render_erb_text(File.read(
-          "#{File.dirname(__FILE__)}/../templates/windows_header.bat.erb"
+          "#{File.dirname(__FILE__)}/../templates/windows_header.ps1.erb"
         )))
       end
       write_bootscript(output)          # streams the script part line-by-line
       write_uuencoded_archive(output)   # streams the archive line-by-line
       if Bootscript.windows?(@vars)
         @bytes_written += output.write(render_erb_text(File.read(
-          "#{File.dirname(__FILE__)}/../templates/windows_footer.bat.erb"
+          "#{File.dirname(__FILE__)}/../templates/windows_footer.ps1.erb"
         )))
       end
       output.close unless destination   # (close StringIO if it was opened)

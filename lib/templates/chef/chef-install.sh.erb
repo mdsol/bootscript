@@ -11,11 +11,12 @@ echo "Installing Chef with ${0}..."
 NODE_NAME="<%= chef_attributes['chef_client']['config']['node_name'] %>"
 CHEF_URL="<%= chef_attributes['chef_client']['config']['chef_server_url'] %>"
 VALIDATION_PEM='<%= ramdisk_mount %>/chef/validation.pem'
+OHAI_HINTS_DIR='/etc/chef/ohai/hints'
 DATABAG_SECRET='<%= ramdisk_mount %>/chef/encrypted_data_bag_secret'
 CHEF_VERSION="<%= (defined? chef_version) ? chef_version : '' %>"
 CHEF_INITIAL_RUNLIST="<%=
   (defined? chef_initial_runlist) ? chef_initial_runlist : '' %>"
-OMNIBUS_INSTALLER_URL="http://opscode.com/chef/install.sh"
+OMNIBUS_INSTALLER_URL="https://omnitruck.chef.io/install.sh"
 CHEF_BIN="/usr/bin/chef-client" # Unix Chef omnibus always symlinks here
 PID_FILE="/var/run/chef/client.pid"
 
@@ -60,7 +61,15 @@ echo "Installing Chef..."
 $cmd
 rm -f $installer
 
-######### STEP 4: INITIAL, ONE-PASS CHEF CONVERGENCE
+######### STEP 4: SET UP ENVIRONMENT HINTS FOR OHAI
+echo "Establishing ohai hints directory: $OHAI_HINTS_DIR"
+mkdir -p "$OHAI_HINTS_DIR"
+if curl -m 60 -f -L -s -S -o /dev/null http://169.254.169.254; then
+  echo "Setting ohai hint: ec2"
+  touch "$OHAI_HINTS_DIR/ec2.json"
+fi
+
+######### STEP 5: INITIAL, ONE-PASS CHEF CONVERGENCE
 echo "Performing initial convergence..."
 cmd="$CHEF_BIN --once --no-color"
 if [[ "$CHEF_INITIAL_RUNLIST" != "" ]] ; then
@@ -69,7 +78,7 @@ fi
 echo $cmd
 $cmd
 
-######### STEP 5: SIGNAL SERVICE TO CONVERGE
+######### STEP 6: SIGNAL SERVICE TO CONVERGE
 echo "Signalling chef service to converge..."
 killall -USR1 chef-client || echo "  (...no chef client service detected)"
 
