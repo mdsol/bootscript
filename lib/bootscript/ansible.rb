@@ -33,7 +33,7 @@ module Bootscript
     def self.files_for_windows(erb_vars)
       template_dir = "#{Bootscript::BUILTIN_TEMPLATE_DIR}/ansible"
       { # built-in files
-        'ansible-install.ps1' =>
+        'ansible/ansible-install.ps1' =>
             File.new("#{template_dir}/ansible-install.ps1.erb"),
       }
     end

@@ -67,6 +67,10 @@ module Bootscript
         defaults[:startup_command]  = 'PowerShell -Command "& '+
           '{C:/chef/chef-install.ps1}" > c:/chef/bootscript_setup.log 2>&1'
       end
+      if Ansible::included?(defaults)
+        defaults[:startup_command]  = 'PowerShell -Command "& '+
+          '{C:/ansible/ansible-install.ps1}" > c:/ansible/bootscript_setup.log 2>&1'
+      end
     else
       defaults[:ramdisk_mount]      = '/etc/secrets'
       defaults[:script_name]        = 'bootscript.sh'
@@ -74,7 +78,7 @@ module Bootscript
         defaults[:startup_command]  = '/usr/local/sbin/chef-install.sh'
       end
       if Ansible::included?(defaults)
-        defaults[:startup_command]  = 'ansible-install.sh'
+        defaults[:startup_command]  = '/usr/local/sbin/ansible-install.sh'
       end
     end
     defaults.merge(vars)  # return user vars merged over platform defaults
