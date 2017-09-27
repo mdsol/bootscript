@@ -1,2 +1,45 @@
-echo "The man in Black fled across the desert, and the Gunslinger followed."
-echo "... and there must be a way to reach the Tower from here ..."
+echo "Starting Ansible installation..."
+
+$AnsiblePath      = "C:\Ansible"
+$AnsibleLog       = "$AnsiblePath\log\bootscript_log.txt"
+$AWS_Metadata_Url = "http://169.254.169.254/latest/meta-data"
+
+function main()
+{
+  try
+  {
+    Create-Ansible-Directory-Structure
+    Call-Ansible-Tower
+  }
+  catch {
+    write-error $error[0]
+    exit 1
+  }
+}
+
+function Create-Ansible-Directory-Structure()
+{
+  New-Item -force -type directory -Path $AnsiblePath | out-null
+  New-Item -force -type directory -Path (Join-Path $AnsiblePath "log") | out-null
+}
+
+function Call-Ansible-Tower()
+{
+  echo "Calling Ansible Tower..."
+  $wc = new-object System.Net.WebClient
+  $bootRequest = @"
+    {
+      "host_config_key": "<%= tower_host_config_key %>",
+      "extra_vars": {
+        "local_hostname": "$($wc.DownloadString($AWS_Metadata_Url/local-hostname))",
+        "local_ipv4": "$($wc.DownloadString($AWS_Metadata_Url/local-ipv4))",
+        "public_hostname": "$($wc.DownloadString($AWS_Metadata_Url/public-hostname))",
+        "public_ipv4": "$($wc.DownloadString($AWS_Metadata_Url/public-ipv4))"
+      }
+    }
+  "@
+  $towerURL = "<%= tower_url %>"
+  $wc.UploadString($towerURL, $bootRequest)
+}
+
+main
