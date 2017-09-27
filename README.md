@@ -22,6 +22,7 @@ Why is it?
 ----------------
 * makes specification of complex, cross-platform boot data simple and portable.
 * simplifies initial Chef setup
+* enables an initial request to a Url for bootstrapping (as for Ansible)
 
 ----------------
 Where is it? (Installation)
@@ -145,10 +146,19 @@ Finally, generate *without* an explicit node name, but filling in the other valu
 The software's Ansible support is triggered when you pass a `:tower_host_config_key` to the `generate()` method. Also
 required is `:tower_url`, used to make the request to Ansible Tower.
 
+    puts Bootscript.generate(
+      logger:                 Logger.new(STDOUT),          # Monitor progress
+      tower_host_config_key:  'your-config-key',           # Obtain from Ansible Tower administrators
+      tower_url:              'https://tower-host.foo.com' # ... likewise
+    )
+
+
 ### Using Chef and Ansible together
 
 The code is written so that if `generate()` receives both `:chef_validation_pem` and `:tower_host_config_key` parameters,
-installers for both Chef and Ansible will be created and executed. The installer for Chef will be executed first.
+installers for both Chef and Ansible will be created and executed. The installer for Chef will be executed first. Either
+of these is complicated enough, so using just one seems wise. That said, one may need to switch from one to the other,
+and having both available may assist in that transition.
 
 ----------------
 *Known Limitations / Bugs*
