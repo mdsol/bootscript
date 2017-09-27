@@ -154,10 +154,11 @@ module Bootscript
       end
     end
 
-    # merges the @data_map with the Chef built-ins, as-needed
+    # merges the @data_map with the Chef and/or Ansible built-ins, as-needed
     def full_data_map
-      Bootscript::Chef.included?(@vars) ?
-        @data_map.merge(Bootscript::Chef.files(@vars)) : @data_map
+      ansible_vars = Ansible.included?(@vars) ? Ansible.files(@vars) : {}
+      chef_vars = Chef.included?(@vars) ? Chef.files(@vars) : {}
+      @data_map.merge(ansible_vars).merge(chef_vars) # Chef wins collisions.
     end
 
     # renders erb_text, using @vars
