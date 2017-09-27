@@ -13,13 +13,13 @@ describe Script do
   #### TEST PUBLIC INSTANCE MEMBER VARIABLES
 
   it "has a public @data_map Hash, for mapping local data to the boot target" do
-    Script.new().should respond_to(:data_map)
-    Script.new().data_map.should be_a Hash
+    expect(Script.new()).to respond_to(:data_map)
+    expect(Script.new().data_map).to be_a Hash
   end
 
   it "exposes a Ruby Logger as its public @log member, to adjust log level" do
-    Script.new().should respond_to(:log)
-    Script.new().log.should be_a Logger
+    expect(Script.new()).to respond_to(:log)
+    expect(Script.new().log).to be_a Logger
   end
 
   #### TEST PUBLIC METHODS
@@ -28,12 +28,12 @@ describe Script do
     context "when invoked with a logger" do
       it "sets the BootScript's @log to the passed Logger object" do
         my_logger = Logger.new(STDOUT)
-        Script.new(my_logger).log.should be my_logger
+        expect(Script.new(my_logger).log).to be my_logger
       end
     end
     context "when invoked with no logger" do
       it "assigns a default Logger the BootScript's @log" do
-        Script.new().log.should be_a Logger
+        expect(Script.new().log).to be_a Logger
       end
     end
   end
@@ -51,23 +51,23 @@ describe Script do
     end
     # test output format
     it "produces a Bash script" do
-      @script.generate.lines.first.chomp.should eq '#!/usr/bin/env bash'
+      expect(@script.generate.lines.first.chomp).to eq '#!/usr/bin/env bash'
     end
     # test stripping of empty lines and comments
     context "when invoked with :strip_comments = true (the default)" do
       it "strips all empty lines and comments from the output" do
         lines = @script.generate.lines.to_a
         lines[1..lines.count].each do |line|
-          line.should_not match /^#/
-          line.should_not match /^\s+$/
+          expect(line).to_not match /^#/
+          expect(line).to_not match /^\s+$/
         end
       end
     end
     context "when invoked with :strip_comments = false" do
       it "leaves empty lines and comments in the output" do
         lines = @script.generate(strip_comments: false).lines.to_a
-        lines.select{|l| l =~ /^\s+$/}.count.should be > 0  # check empty lines
-        lines.select{|l| l =~ /^#/}.count.should be > 1     # check comments
+        expect(lines.select{|l| l =~ /^\s+$/}).to_not be_empty  # check empty lines
+        expect(lines.select{|l| l =~ /^#/}.size).to be > 1      # check comments
       end
     end
 
@@ -77,7 +77,7 @@ describe Script do
     vars.keys.each do |var|
       it "renders template variable :#{var} as Bash variable #{var.upcase}" do
         rendered_config = Unpacker.new(Script.new.generate(vars)).config
-        vars[var].to_s.should eq rendered_config[var.upcase.to_s]
+        expect(vars[var].to_s).to eq rendered_config[var.upcase.to_s]
       end
     end
     # test rendering of custom templates
@@ -86,8 +86,8 @@ describe Script do
       text = @script.generate(my_name: 'H. L. Mencken')
       Dir.mktmpdir do |tmp_dir| # do unarchiving in a temp dir
         Unpacker.new(text).unpack_to tmp_dir
-        File.exists?("#{tmp_dir}/hello.sh").should == true
-        File.read("#{tmp_dir}/hello.sh").should eq 'echo Hello, H. L. Mencken.'
+        expect(File.exists?("#{tmp_dir}/hello.sh")).to eq(true)
+        expect(File.read("#{tmp_dir}/hello.sh")).to eq 'echo Hello, H. L. Mencken.'
       end
     end
     # test raw file copying
@@ -97,17 +97,17 @@ describe Script do
       Dir.mktmpdir do |tmp_dir| # do unarchiving in a temp dir
         target_file = "#{tmp_dir}/#{File.basename(__FILE__)}"
         Unpacker.new(@script.generate).unpack_to tmp_dir
-        File.exists?(target_file).should == true
-        File.read(target_file).should eq File.read(__FILE__)
+        expect(File.exists?(target_file)).to eq(true)
+        expect(File.read(target_file)).to eq File.read(__FILE__)
       end
     end
     # test return values
     context "when invoked without any output destination" do
       it "returns the rendered text of the BootScript" do
         rendered_text = @script.generate
-        rendered_text.should be_a String
-        rendered_text.lines.first.chomp.should eq '#!/usr/bin/env bash'
-        rendered_text.lines.should include("__ARCHIVE_FOLLOWS__\n")
+        expect(rendered_text).to be_a String
+        expect(rendered_text.lines.first.chomp).to eq '#!/usr/bin/env bash'
+        expect(rendered_text.lines).to include("__ARCHIVE_FOLLOWS__\n")
       end
     end
     context "when invoked with a custom output destination" do
@@ -116,8 +116,8 @@ describe Script do
         File.open('/dev/null', 'w') do |outfile|
           bytes_written = @script.generate({}, outfile)
         end
-        bytes_written.should be_a Fixnum
-        bytes_written.should == script_size
+        expect(bytes_written).to be_a Fixnum
+        expect(bytes_written).to eq(script_size)
       end
     end
 
