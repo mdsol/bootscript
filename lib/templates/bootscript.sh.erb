@@ -148,8 +148,11 @@ rm -f $SCRIPT_PATH  # this script removes itself!
 ####################################
 ####  STEP 6 - Execute startup command
 echo "Executing user startup command..."
-<% if defined? chef_validation_pem %>
+<% if use_chef %>
 chmod 0744 /usr/local/sbin/chef-install.sh
+<% end %>
+<% if use_ansible %>
+chmod 0744 /usr/local/sbin/ansible-install.sh
 <% end %>
 if ! <%= startup_command %> ; then
     echo "Startup command failed. This system may be unhealthy."

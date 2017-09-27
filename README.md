@@ -34,7 +34,7 @@ Install the gem and its dependencies from RubyGems:
 ----------------
 How is it [done]? (Usage)
 ----------------
-Call the gem's main public method: `Bootscript.generate()`. It accepts a Hash of template variables as its first argument, which is passed directly to any ERB  template files as they render. All the data in the Hash is available to the templates, but some of the key-value pairs also control the gem's rendering behavior, as demonstrated in the following examples. (There's also a [list of such variables](ERB_VARS.md).)
+Call the gem's main public method: `Bootscript.generate()`. It accepts a Hash of template variables as its first argument, which is passed directly to any ERB template files as they render. All the data in the Hash is available to the templates, but some of the key-value pairs also control the gem's rendering behavior, as demonstrated in the following examples. (There's also a [list of such variables](ERB_VARS.md).)
 
 
 ### Simplest - make a RAMdisk
@@ -139,6 +139,16 @@ Finally, generate *without* an explicit node name, but filling in the other valu
       chef_databag_secret:  DATABAG_SECRET,
     }, data_map)
 
+
+### Ansible support
+
+The software's Ansible support is triggered when you pass a `:tower_host_config_key` to the `generate()` method. Also
+required is `:tower_url`, used to make the request to Ansible Tower.
+
+### Using Chef and Ansible together
+
+The code is written so that if `generate()` receives both `:chef_validation_pem` and `:tower_host_config_key` parameters,
+installers for both Chef and Ansible will be created and executed. The installer for Chef will be executed first.
 
 ----------------
 *Known Limitations / Bugs*

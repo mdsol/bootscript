@@ -23,7 +23,9 @@ module Bootscript
     update_os:       false,
     inst_pkgs:       'bash openssl openssh-server', #list of packages you want upgraded
     curl_options:    '',
-    bash_options:    ''
+    bash_options:    '',
+    use_chef:        false,
+    use_ansible:     false
   }
 
   # Generates the full text of a boot script based on the supplied
@@ -63,24 +65,12 @@ module Bootscript
     if defaults[:platform].to_s == 'windows'
       defaults[:ramdisk_mount]      = 'R:'
       defaults[:script_name]        = 'bootscript.ps1'
-      if Chef::included?(defaults)
-        defaults[:startup_command]  = 'PowerShell -Command "& '+
-          '{C:/chef/chef-install.ps1}" > c:/chef/bootscript_setup.log 2>&1'
-      end
-      if Ansible::included?(defaults)
-        defaults[:startup_command]  = 'PowerShell -Command "& '+
-          '{C:/ansible/ansible-install.ps1}" > c:/ansible/bootscript_setup.log 2>&1'
-      end
     else
       defaults[:ramdisk_mount]      = '/etc/secrets'
       defaults[:script_name]        = 'bootscript.sh'
-      if Chef::included?(defaults)
-        defaults[:startup_command]  = '/usr/local/sbin/chef-install.sh'
-      end
-      if Ansible::included?(defaults)
-        defaults[:startup_command]  = '/usr/local/sbin/ansible-install.sh'
-      end
     end
+    defaults[:use_chef] = Chef::included?(defaults)
+    defaults[:use_ansible] = Ansible::included?(defaults)
     defaults.merge(vars)  # return user vars merged over platform defaults
   end
 

@@ -19,6 +19,13 @@ The Chef-based examples in the README illustrate the included Chef support.
 * `:chef_attributes` - a Hash of Chef attributes that is read as `node[chef_client][config]` by the [Opscode chef-client cookbook][1]. This is where you specify your `node_name` (if desired), `chef_server_url`, `validation_client_name`, etc. *Always use strings for chef attribute keys, not symbols!*
 
 
+Ansible settings
+----------------
+The Ansible-based examples in the README illustrate the included Ansible support.
+* `:tower_host_config_key` - When set to any non-nil value, enables the built-in Ansible support. The value is the config key for Ansible Tower.
+* `:tower_url` - The URL at which Ansible Tower listens for requests to run playbooks.
+
+
 RAMdisk settings
 ----------------
 * `:create_ramdisk` - Setting this to `true` generates a bootscript that creates a RAMdisk of a configurable size and at a configurable filesystem location. This happens even before the archive is unpacked, so you can extract files into the RAMdisk.

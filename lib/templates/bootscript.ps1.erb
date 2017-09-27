@@ -17,8 +17,24 @@ function main()
     Execute-ImDisk
     echo "RAMDisk setup complete."
   }
+  <% if use_chef %>
+  Install-Chef
+  <% end %>
+  <% if use_ansible %>
+  Install-Ansible
+  <% end %>
   Execute-Command($startup_cmd)
   echo "Bootstrap complete."
+}
+
+function Install-Chef()
+{
+  Execute-Command("PowerShell -Command { C:/chef/chef-install.ps1 > C:/chef/chef_setup.log 2>&1 }")
+}
+
+function Install-Ansible()
+{
+  Execute-Command("PowerShell -Command { C:/ansible/ansible-install.ps1 > C:/ansible/ansible_setup.log 2>&1 }")
 }
 
 function Download-ImDisk()
