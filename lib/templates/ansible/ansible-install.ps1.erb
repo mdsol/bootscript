@@ -1,7 +1,7 @@
 echo "Starting Ansible installation..."
 
 $AnsiblePath      = "C:\Ansible"
-$AnsibleLog       = "$AnsiblePath\log\bootscript_log.txt"
+$AnsibleLog       = "$AnsiblePath\bootscript_log.txt"
 $AWS_Metadata_Url = "http://169.254.169.254/latest/meta-data"
 
 function main()
@@ -20,7 +20,6 @@ function main()
 function Create-Ansible-Directory-Structure()
 {
   New-Item -force -type directory -Path $AnsiblePath | out-null
-  New-Item -force -type directory -Path (Join-Path $AnsiblePath "log") | out-null
 }
 
 function Call-Ansible-Tower()
