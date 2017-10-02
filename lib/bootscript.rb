@@ -94,6 +94,7 @@ module Bootscript
         defaults[:startup_command]  = startup_cmd.join(' && ')
       end
     end
+    defaults[:startup_command] ||= 'echo "No bootstrap requested"'
     defaults.merge(vars)  # return user vars merged over platform defaults
   end
 
