@@ -58,19 +58,42 @@ module Bootscript
     logger
   end
 
+  def self.powershell_cmd(script_path, script_log)
+    %Q{PowerShell -Command "& {#{script_path}}" > #{script_log} 2>&1}
+  end
+
   # Returns the passed Hash of template vars, merged over a set of
   # computed, platform-specific default variables
   def self.merge_platform_defaults(vars)
     defaults = DEFAULT_VARS.merge(vars)
+    defaults[:use_chef] = Chef::included?(defaults)
+    defaults[:use_ansible] = Ansible::included?(defaults)
+    startup_cmd = []
     if defaults[:platform].to_s == 'windows'
       defaults[:ramdisk_mount]      = 'R:'
       defaults[:script_name]        = 'bootscript.ps1'
+      if defaults[:use_ansible]
+        startup_cmd << powershell_cmd(
+            'C:/ansible/ansible-install.ps1',
+            'c:/ansible/bootscript_setup.log')
+      end
+      if defaults[:use_chef]
+        startup_cmd << powershell_cmd(
+            'C:/chef/chef-install.ps1',
+            'c:/chef/bootscript_setup.log')
+      end
+      if startup_cmd.size > 0
+        defaults[:startup_command]  = startup_cmd.join(' ; ')
+      end
     else
       defaults[:ramdisk_mount]      = '/etc/secrets'
       defaults[:script_name]        = 'bootscript.sh'
+      startup_cmd << 'chef-install.sh'    if defaults[:use_chef]
+      startup_cmd << 'ansible-install.sh' if defaults[:use_ansible]
+      if startup_cmd.size > 0
+        defaults[:startup_command]  = startup_cmd.join(' && ')
+      end
     end
-    defaults[:use_chef] = Chef::included?(defaults)
-    defaults[:use_ansible] = Ansible::included?(defaults)
     defaults.merge(vars)  # return user vars merged over platform defaults
   end
 
