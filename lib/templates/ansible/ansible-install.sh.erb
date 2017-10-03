@@ -19,13 +19,7 @@ else
 fi
 
 ######### STEP 2: SIGNAL TO TOWER
-#
-# Just pondering: could we instead of speaking to a specific URL, use the AWS tools
-# to post to an SNS topic? Then multiple subscribers could find out that a node
-# needs bootstrapping. Perhaps the additional time required for that request to
-# move through the AWS infrastructure would not be substantial.
-#
-echo "Signalling Tower to bootstrap us..."
+echo "Call out to Ansible Tower to bootstrap us..."
 if which curl > /dev/null; then
   AWS_METADATA_URL="http://169.254.169.254/latest/meta-data"
   cat <<END_POST_DATA | curl <%= curl_options %> -H "Content-Type: application/json" -X POST --data - $TOWER_URL
@@ -39,8 +33,10 @@ if which curl > /dev/null; then
       }
     }
 END_POST_DATA
-  # We can't do much else here, as a response from Tower is expected. We can't tell if it never responded, so, e.g.,
-  # marking the instance as Unhealthy using the AWS command-line tools isn't in scope.
+  exit_status="$?"
+  if [ "${exit_status}" != "0" ]; then
+    echo "The call to Ansible Tower (via curl) exited with status code: ${exit_status}"
+  fi
 else
   echo "The curl command is not available; unable to signal Tower for bootstrap"
 fi
