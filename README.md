@@ -143,19 +143,35 @@ Finally, generate *without* an explicit node name, but filling in the other valu
 
 ### Ansible support
 
-The software's Ansible support is triggered when you pass a `:tower_host_config_key` to the `generate()` method. Also
-required is `:tower_url`, used to make the request to Ansible Tower.
+The software's Ansible support is triggered when you pass a `:tower_url` option to the `generate()` method.
+A request will be made to the specified url, sending data via POST. The data to send may require information that
+is only available on the bootstrapped machine. The data to be POSTed is created by a script executed on the
+bootstrapping node, immediately prior to making the POST request to `:tower_url`. The path to this script is
+specified in the call to `generate()`:
 
-    puts Bootscript.generate(
-      logger:                 Logger.new(STDOUT),          # Monitor progress
-      tower_host_config_key:  'your-config-key',           # Obtain from Ansible Tower administrators
-      tower_url:              'https://tower-host.foo.com' # ... likewise
+    script = Bootscript.generate(
+      logger:                 Logger.new(STDOUT),           # Monitor progress
+      tower_url:              'https://tower-host.foo.com', # Obtain from Ansible Tower administrators
+      tower_post_data_script: '/path/to/your/script',
+      tower_post_data_file:   '/path/to/the/file',
     )
 
+The script specified by `:tower_post_data_script` is expected to create the file specified by `:tower_post_data_file`.
+If the bootstrap call to `:tower_url` succeeds (i.e., the call to curl returns a zero exit status), both the data
+file `:tower_post_data_file` and script `:tower_post_data_script` will be deleted from the filesystem.
+
+### Failure (inconceivable!)
+
+The `generate()` method accepts an option, `:startup_failed_command`, which is a string. If the startup command
+exits with a non-zero status, the command configured with this option will be executed. One could, for example,
+provide a template for a script that marks an EC2 instance as unhealthy using the AWS CLI, and then invoke that
+script by supplying the path to the script as the value of `:startup_failed_command`.
+
+The default value for `:startup_failed_command` is an empty string, so the default is to take no action on failure.
 
 ### Using Chef and Ansible together
 
-The code is written so that if `generate()` receives both `:chef_validation_pem` and `:tower_host_config_key` parameters,
+The code is written so that if `generate()` receives both `:chef_validation_pem` and `:tower_url` parameters,
 installers for both Chef and Ansible will be created and executed. The installer for Chef will be executed first. Either
 of these is complicated enough, so using just one seems wise. That said, one may need to switch from one to the other,
 and having both available may assist in that transition.
@@ -163,9 +179,9 @@ and having both available may assist in that transition.
 ----------------
 *Known Limitations / Bugs*
 ----------------
-* bash and tar are required on Unix boot targets
+* bash, curl, and tar are required on Unix boot targets
 * Powershell is required on Windows boot targets
-* bash, tar and uudecode are required to run the tests
+* bash, tar, and uudecode are required to run the tests
 
 
 ----------------

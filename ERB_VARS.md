@@ -22,8 +22,8 @@ The Chef-based examples in the README illustrate the included Chef support.
 Ansible settings
 ----------------
 The Ansible-based examples in the README illustrate the included Ansible support.
-* `:tower_host_config_key` - When set to any non-nil value, enables the built-in Ansible support. The value is the config key for Ansible Tower.
-* `:tower_url` - The URL at which Ansible Tower listens for requests to run playbooks.
+* `:tower_url` - When set to any non-nil value, enables the built-in Ansible support. The value is the URL at which Ansible Tower listens for requests to run playbooks.
+* `:tower_post_data` - The body of the POST request made to the tower_url.
 
 
 RAMdisk settings

@@ -75,30 +75,37 @@ module Bootscript
       if defaults[:use_ansible]
         startup_cmd << powershell_cmd(
             'C:/ansible/ansible-install.ps1',
-            'c:/ansible/bootscript_setup.log')
+            'C:/ansible/bootscript_setup.log')
+        defaults[:tower_post_data_file] = 'C:/ansible/ansible-post-data.txt'
       end
       if defaults[:use_chef]
         startup_cmd << powershell_cmd(
             'C:/chef/chef-install.ps1',
-            'c:/chef/bootscript_setup.log')
+            'C:/chef/bootscript_setup.log')
       end
       if startup_cmd.size > 0
         defaults[:startup_command]  = startup_cmd.join(' ; ')
       end
-    else
+    else # unix! the only way it should be...
       defaults[:ramdisk_mount]      = '/etc/secrets'
       defaults[:script_name]        = 'bootscript.sh'
-      startup_cmd << 'chef-install.sh'    if defaults[:use_chef]
-      startup_cmd << 'ansible-install.sh' if defaults[:use_ansible]
+      if defaults[:use_chef]
+        startup_cmd << 'chef-install.sh'
+      end
+      if defaults[:use_ansible]
+        startup_cmd << 'ansible-install.sh'
+        defaults[:tower_post_data_file] = '/tmp/ansible-post-data'
+      end
       if startup_cmd.size > 0
         defaults[:startup_command]  = startup_cmd.join(' && ')
       end
     end
+    defaults[:startup_failed_command] ||= ''
     defaults[:startup_command] ||= 'echo "No bootstrap requested"'
     defaults.merge(vars)  # return user vars merged over platform defaults
   end
 
-  BUILTIN_TEMPLATE_DIR  = File.dirname(__FILE__)+"/templates"
+  BUILTIN_TEMPLATE_DIR  = "#{File.dirname(__FILE__)}/templates"
   UNIX_TEMPLATE         = "#{BUILTIN_TEMPLATE_DIR}/bootscript.sh.erb"
   WINDOWS_TEMPLATE      = "#{BUILTIN_TEMPLATE_DIR}/bootscript.ps1.erb"
 

@@ -1,7 +1,6 @@
 echo "Starting Ansible installation..."
 
-$AnsiblePath      = "C:\Ansible"
-$AWS_Metadata_Url = "http://169.254.169.254/latest/meta-data"
+$AnsiblePath = "C:\Ansible"
 
 function main()
 {
@@ -25,19 +24,9 @@ function Call-Ansible-Tower()
 {
   echo "Calling Ansible Tower..."
   $wc = new-object System.Net.WebClient
-  $bootRequest = @"
-    {
-      "host_config_key": "<%= tower_host_config_key %>",
-      "extra_vars": {
-        "local_hostname": "$($wc.DownloadString($AWS_Metadata_Url/local-hostname))",
-        "local_ipv4": "$($wc.DownloadString($AWS_Metadata_Url/local-ipv4))",
-        "public_hostname": "$($wc.DownloadString($AWS_Metadata_Url/public-hostname))",
-        "public_ipv4": "$($wc.DownloadString($AWS_Metadata_Url/public-ipv4))"
-      }
-    }
-  "@
-  $towerURL = "<%= tower_url %>"
-  $wc.UploadString($towerURL, $bootRequest)
+  $pathToFile = Resolve-Path <%= tower_post_data_file %>
+  $bootRequest = Get-Content $pathToFile -Raw
+  $wc.UploadString("<%= tower_url %>", $bootRequest)
 }
 
 main

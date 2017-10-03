@@ -6,8 +6,7 @@ describe Ansible do
   describe :files do
     context "given a set of ERB template vars" do
       erb_vars = {
-        tower_host_config_key: 'SKDFJAKDFSKFJSDFSJDFKS',
-        tower_url:             'https://foo.imedidata.net'
+        tower_url: 'https://foo.imedidata.net'
       }
       it "returns a Hash mapping locations on the boot target to local data" do
         expect(Ansible.files(erb_vars)).to be_a Hash
@@ -19,10 +18,10 @@ describe Ansible do
   end
 
   describe :included? do
-    desired_key = :tower_host_config_key
+    desired_key = :tower_url
     context "given a set of ERB template vars with key :#{desired_key}" do
       it "returns true" do
-        expect(Ansible.included?(tower_host_config_key: 'SKDFJAKDFSKFJSDFSJDFKS')).to be true
+        expect(Ansible.included?(tower_url: 'https://foo.imedidata.net')).to be true
       end
     end
     context "given a set of ERB template vars without key :#{desired_key}" do
