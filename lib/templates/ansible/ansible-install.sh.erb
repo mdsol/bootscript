@@ -8,6 +8,7 @@ echo "Calling Ansible Tower with ${0}..."
 TOWER_URL="<%= tower_url %>"
 
 ######### STEP 1: CONFIGURE OPERATING SYSTEM AND INSTALL DEPENDENCIES
+<% if package_update %>
 echo "Performing package update..."
 if [ "$DistroBasedOn" == 'debian' ] ; then
   export DEBIAN_FRONTEND=noninteractive
@@ -17,6 +18,9 @@ if [ "$DistroBasedOn" == 'debian' ] ; then
 else
   echo "Skipping..."
 fi
+<% else %>
+echo "Initial package update not configured; skipping..."
+<% end %>
 
 ######### STEP 2: SIGNAL TO TOWER
 echo "Call out to Ansible Tower to bootstrap us..."

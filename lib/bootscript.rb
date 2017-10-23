@@ -25,7 +25,8 @@ module Bootscript
     curl_options:    '',
     bash_options:    '',
     use_chef:        false,
-    use_ansible:     false
+    use_ansible:     false,
+    package_update:  true
   }
 
   # Generates the full text of a boot script based on the supplied
