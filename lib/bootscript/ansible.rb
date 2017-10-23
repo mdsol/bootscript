@@ -22,6 +22,11 @@ module Bootscript
 
     private
 
+    # Callers will almost certainly replace the ansible-post-data-script.{sh,ps1}.erb
+    # template with their own. But they don't have to. We supply here a default
+    # script which simply creates an empty body for the POST request to the Ansible
+    # Tower url.
+
     def self.files_for_unix(erb_vars)
       template_dir = "#{Bootscript::BUILTIN_TEMPLATE_DIR}/ansible"
       { # built-in files
