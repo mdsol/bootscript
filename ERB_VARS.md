@@ -23,7 +23,8 @@ Ansible settings
 ----------------
 The Ansible-based examples in the README illustrate the included Ansible support.
 * `:tower_url` - When set to any non-nil value, enables the built-in Ansible support. The value is the URL at which Ansible Tower listens for requests to run playbooks.
-* `:tower_post_data` - The body of the POST request made to the tower_url.
+* `:tower_post_data_script` - The path to the script that will generate the body of the POST request made to the tower_url.
+* `:tower_post_data_file` - The path to the file containing the POST request made to the tower_url.
 
 
 RAMdisk settings
