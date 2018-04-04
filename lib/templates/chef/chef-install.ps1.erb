@@ -92,7 +92,7 @@ function Chef-Url()
   elseif ($winrev -eq "6.2") { $machineos = "2012" }
   elseif ($winrev -eq "6.3") { $machineos = "2012r2" }
   else   { throw "ERROR: Windows Server 2003, 2008 or 2012 required" }
-  $url = "https://www.opscode.com/chef/download?p=windows&pv=$machineos&m=$arch"
+  $url = "https://omnitruck.chef.io/stable/chef/download?p=windows&pv=$machineos&m=$arch"
   if ($ChefVers -ne "") { $url = "$url&v=$ChefVers" }
   return $url
 }
