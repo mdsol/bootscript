@@ -123,13 +123,13 @@ module Bootscript
     # Archive::Tar::Minitar::Writer (if unix), or a Zip::OutputStream (windows)
     def render_data_map_into(archive)
       full_data_map.each do |remote_path, item|
-        if item.is_a? String            # case 1: data item is a String
+        if item.is_a?(String)           # case 1: data item is a String
           @log.debug "Rendering ERB data (#{item[0..16]}...) into archive"
           data  = render_erb_text(item)
           input = StringIO.open(data, 'r')
           size  = data.bytes.count
         elsif item.is_a?(File)          # case 2: data item is an ERB file
-          if item.path.upcase.sub(/\A.*\./,'') == 'ERB'
+          if item.path.upcase.end_with?('.ERB')
             @log.debug "Rendering ERB file #{item.path} into archive"
             data  = render_erb_text(item.read)
             input = StringIO.open(data, 'r')
@@ -154,10 +154,11 @@ module Bootscript
       end
     end
 
-    # merges the @data_map with the Chef built-ins, as-needed
+    # merges the @data_map with the Chef and/or Ansible built-ins, as-needed
     def full_data_map
-      Bootscript::Chef.included?(@vars) ?
-        @data_map.merge(Bootscript::Chef.files(@vars)) : @data_map
+      ansible_vars = Ansible.included?(@vars) ? Ansible.files(@vars) : {}
+      chef_vars = Chef.included?(@vars) ? Chef.files(@vars) : {}
+      @data_map.merge(ansible_vars).merge(chef_vars) # Chef wins collisions.
     end
 
     # renders erb_text, using @vars
@@ -170,8 +171,8 @@ module Bootscript
     def strip_shell_comments(text)
       lines = text.lines.to_a
       return text if lines.count < 2
-      lines.first + lines[1..lines.count].
-        reject{|l| (l =~ /^\s*#/) || (l =~ /^\s+$/)}.join('')
+      lines.first + lines.drop(1).
+        reject { |l| (l =~ /^\s*#/) || (l =~ /^\s+$/) }.join('')
     end
   end
 

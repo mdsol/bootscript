@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash <%= bash_options %>
 # Installs chef-client via the ombnibus installer (with minimal dependencies),
 # and tries to converge twice: first, with just this runlist -
 #     recipe[chef-client::config],recipe[chef-client::service]
@@ -33,6 +33,7 @@ if [ -e "$DATABAG_SECRET" ] ; then
 fi
 
 ######### STEP 2: CONFIGURE OPERATING SYSTEM AND INSTALL DEPENDENCIES
+<% if package_update %>
 echo "Performing package update..."
 if [ "$DistroBasedOn" == 'debian' ] ; then
   export DEBIAN_FRONTEND=noninteractive
@@ -42,6 +43,9 @@ if [ "$DistroBasedOn" == 'debian' ] ; then
 else
   echo "Skipping..."
 fi
+<% else %>
+echo "Initial package update not configured; skipping..."
+<% end %>
 
 ######### STEP 3: INSTALL CHEF VIA OMNIBUS INSTALLER
 echo "Downloading Chef..."

@@ -1,0 +1,51 @@
+#!/usr/bin/env bash <%= bash_options %>
+# Calls out to Ansible Tower to request bootstrapping actions.
+set -e
+test $UID == 0 || (echo "Error: must run as root"; exit 1)
+echo "Calling Ansible Tower with ${0}..."
+
+######### STEP 0: CONFIG, rendered by bootscript gem
+TOWER_URL="<%= tower_url %>"
+
+######### STEP 1: CONFIGURE OPERATING SYSTEM AND INSTALL DEPENDENCIES
+<% if package_update %>
+echo "Performing package update..."
+if [ "$DistroBasedOn" == 'debian' ] ; then
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -y
+  echo "Installing build-essential and curl..."
+  apt-get --force-yes -y install build-essential curl
+else
+  echo "Skipping..."
+fi
+<% else %>
+echo "Initial package update not configured; skipping..."
+<% end %>
+
+######### STEP 2: SIGNAL TO TOWER
+echo "Call out to Ansible Tower to bootstrap us..."
+if which curl > /dev/null; then
+
+  # Run the command to create the file curl will read
+  <%= tower_post_data_script %>
+
+  curl <%= curl_options %>                  \
+      -H "Content-Type: application/json"   \
+      -X POST                               \
+      $TOWER_URL                            \
+      --data-binary "@<%= tower_post_data_file %>"
+
+  exit_status="$?"
+  if [ "${exit_status}" != "0" ]; then
+    echo "The call to Ansible Tower (via curl) exited with status code: ${exit_status}"
+    exit $exit_status
+  else
+    echo "Cleaning up after successful curl request to ${TOWER_URL}"
+    rm -f "<%= tower_post_data_file %>" "<%= tower_post_data_script %>"
+  fi
+else
+  echo "The curl command is not available; unable to signal Tower for bootstrap"
+  exit 1
+fi
+
+echo "Done."

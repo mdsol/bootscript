@@ -148,39 +148,19 @@ rm -f $SCRIPT_PATH  # this script removes itself!
 ####################################
 ####  STEP 6 - Execute startup command
 echo "Executing user startup command..."
-<% if defined? chef_validation_pem %>
+<% if use_chef %>
 chmod 0744 /usr/local/sbin/chef-install.sh
 <% end %>
-if ! <%= startup_command %> ; then
-    echo "Startup command failed. This system may be unhealthy."
+<% if use_ansible %>
+chmod 0744 /usr/local/sbin/ansible-install.sh
+<% end %>
 
-    # The startup command failed so this instance is likely to be
-    # broken in some way. We should mark the instance as unhealthy
-    # if it's part of an AWS autoscaling group. This relies on the
-    # AWS CLI tools being installed.
+<%= startup_command %>
+exit_status="$?"
 
-    aws_cli_version=$(aws --version 2>&1 | awk '{print $1}' | awk -F/ '{print $2}')
-    aws_major=$(echo $aws_cli_version | awk -F. '{print $1}' | sed -e 's/[^0-9]//g')
-    aws_minor=$(echo $aws_cli_version | awk -F. '{print $2}' | sed -e 's/[^0-9]//g')
-    if [ "$aws_major" -le "1" -a "$aws_minor" -lt "11" ]; then
-        echo "The aws-cli package version is out of date; please upgrade your AMI."
-    else
-        if ec2_instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id) ; then
-            ec2_region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -e s'/.$//')
-            which aws >/dev/null && \
-                aws autoscaling describe-auto-scaling-instances \
-                    --instance-ids $ec2_instance_id \
-                    --region $ec2_region \
-                    | grep -F $ec2_instance_id >/dev/null &&
-                aws autoscaling set-instance-health \
-                    --instance-id $ec2_instance_id \
-                    --health-status Unhealthy \
-                    --no-should-respect-grace-period \
-                    --region $ec2_region
-        fi
-
-    fi
-
+if [ "${exit_status}" != "0" ]; then
+    echo "Startup command failed (exit status: ${exit_status}). This system may be unhealthy."
+    <%= startup_failed_command %>
     exit 1
 fi
 <% end %>

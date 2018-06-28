@@ -1,0 +1,32 @@
+echo "Starting Ansible installation..."
+
+$AnsiblePath = "C:\Ansible"
+
+function main()
+{
+  try
+  {
+    Create-Ansible-Directory-Structure
+    Call-Ansible-Tower
+  }
+  catch {
+    write-error $error[0]
+    exit 1
+  }
+}
+
+function Create-Ansible-Directory-Structure()
+{
+  New-Item -force -type directory -Path $AnsiblePath | out-null
+}
+
+function Call-Ansible-Tower()
+{
+  echo "Calling Ansible Tower..."
+  $wc = new-object System.Net.WebClient
+  $pathToFile = Resolve-Path <%= tower_post_data_file %>
+  $bootRequest = Get-Content $pathToFile -Raw
+  $wc.UploadString("<%= tower_url %>", $bootRequest)
+}
+
+main
